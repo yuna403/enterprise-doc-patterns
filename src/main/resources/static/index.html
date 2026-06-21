@@ -5,99 +5,260 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>企业文档系统 - 设计模式综合演示</title>
 <style>
+:root {
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #333; }
-.header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; padding: 18px 30px; }
-.header h1 { font-size: 20px; margin-bottom: 6px; }
-.header p { font-size: 12px; color: #94a3b8; }
-.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px; }
-.badge-blue { background: #dbeafe; color: #2563eb; }
-.badge-green { background: #dcfce7; color: #16a34a; }
-.badge-purple { background: #f3e8ff; color: #9333ea; }
-.badge-yellow { background: #fef3c7; color: #d97706; }
-.badge-red { background: #fee2e2; color: #dc2626; }
-.badge-cyan { background: #cffafe; color: #0891b2; }
 
-.container { max-width: 1100px; margin: 20px auto; padding: 0 20px; }
-.card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 20px; margin-bottom: 16px; }
-.card h3 { font-size: 15px; color: #1e293b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
 
-/* Tabs */
-.tab-bar { background: #fff; border-bottom: 2px solid #e2e8f0; display: flex; padding: 0 10px; overflow-x: auto; }
-.tab-btn { padding: 12px 20px; cursor: pointer; font-size: 13px; border: none; background: none; color: #64748b; border-bottom: 3px solid transparent; transition: all .2s; font-weight: 500; white-space: nowrap; }
-.tab-btn:hover { color: #3b82f6; }
-.tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
-.tab-content { display: none; padding: 20px 0; }
-.tab-content.active { display: block; }
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+  color: #fff;
+  padding: 28px 32px 22px;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255,255,255,.06) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.header-content { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+.header h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; margin-bottom: 8px; }
+.header p { font-size: 13px; color: rgba(255,255,255,.7); margin-bottom: 14px; }
+.header .subtitle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,.5); }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  background: rgba(255,255,255,.12); color: rgba(255,255,255,.9);
+  backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,.08);
+}
+
+/* Tab Bar */
+.tab-bar {
+  background: var(--card-bg);
+  display: flex;
+  padding: 0 16px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  position: sticky; top: 0; z-index: 10;
+}
+.tab-btn {
+  padding: 14px 22px; cursor: pointer; font-size: 13px;
+  border: none; background: none; color: var(--text-muted);
+  border-bottom: 2.5px solid transparent; transition: all .2s;
+  font-weight: 500; white-space: nowrap; position: relative;
+}
+.tab-btn:hover { color: var(--primary); background: rgba(99,102,241,.03); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.tab-btn .step-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; font-size: 11px;
+  margin-right: 6px; font-weight: 700; color: #fff;
+}
+
+/* Container */
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 24px 48px; }
+
+/* Card */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  transition: box-shadow .2s;
+}
+.card:hover { box-shadow: var(--shadow-lg); }
+.card h3 {
+  font-size: 14px; color: var(--text); margin-bottom: 16px;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.card h3 .icon { font-size: 16px; }
 
 /* Form */
-.form-row { display: flex; gap: 12px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
-.form-group { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
-.form-group label { font-size: 12px; color: #64748b; margin-bottom: 3px; }
-.form-group input, .form-group select { padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; }
-.form-group input:focus, .form-group select:focus { border-color: #3b82f6; }
+.form-section {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.form-section-title {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.form-row { display: flex; gap: 16px; margin-bottom: 12px; align-items: flex-end; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+.form-group label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
+.form-group input, .form-group select {
+  padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 13px; outline: none; transition: border-color .2s, box-shadow .2s;
+  background: #fff;
+}
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+}
 
 /* Buttons */
-.btn { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: #fff; transition: all .15s; }
-.btn:hover { opacity: .85; transform: translateY(-1px); }
-.btn-blue { background: #3b82f6; }
-.btn-yellow { background: #f59e0b; }
-.btn-purple { background: #a855f7; }
-.btn-green { background: #22c55e; }
-.btn-cyan { background: #06b6d4; }
-.btn-red { background: #ef4444; }
+.btn {
+  padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: #fff; transition: all .2s;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+.btn-warning { background: linear-gradient(135deg, var(--warning), #d97706); }
+.btn-purple { background: linear-gradient(135deg, var(--purple), #7c3aed); }
+.btn-success { background: linear-gradient(135deg, var(--success), #059669); }
+.btn-cyan { background: linear-gradient(135deg, var(--cyan), #0891b2); }
+.btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); }
+.btn-full {
+  background: linear-gradient(135deg, #1e1b4b, #4338ca);
+  padding: 12px 28px; font-size: 14px; margin-top: 8px;
+}
 
-/* Log */
-.log-box { background: #1e1e1e; color: #4ade80; font-family: "Consolas", monospace; font-size: 13px; padding: 14px; border-radius: 8px; min-height: 120px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+/* Log Box */
+.log-box {
+  background: #0f172a;
+  color: #4ade80;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+  font-size: 12.5px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  min-height: 140px;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.7;
+  border: 1px solid #1e293b;
+}
+.log-box::-webkit-scrollbar { width: 6px; }
+.log-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 
 /* Tree */
-.tree { font-size: 13px; padding: 10px; }
-.tree-dir { color: #3b82f6; font-weight: 600; }
-.tree-file { color: #22c55e; }
-.tree-children { padding-left: 20px; border-left: 1px dashed #d1d5db; margin-left: 8px; }
-.tree-node { padding: 2px 0; }
+.tree { font-size: 13px; padding: 12px; }
+.tree-dir { color: var(--primary); font-weight: 600; }
+.tree-file { color: var(--success); }
+.tree-children { padding-left: 20px; border-left: 1.5px dashed var(--border); margin-left: 8px; }
+.tree-node { padding: 3px 0; }
 
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
-/* Pattern info */
-.pattern-info { background: #f8fafc; border-radius: 8px; padding: 14px; font-size: 13px; line-height: 1.8; color: #475569; margin-bottom: 12px; }
-.pattern-info strong { color: #1e293b; }
+/* Pattern Info */
+.pattern-info {
+  background: linear-gradient(135deg, #f0f0ff, #f8f8ff);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #475569;
+  margin-bottom: 16px;
+  border: 1px solid #e0e7ff;
+}
+.pattern-info strong { color: var(--primary-dark); font-weight: 600; }
 
-/* Step header */
-.step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.step-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; }
+/* Step Header */
+.step-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.step-num {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px; color: #fff;
+  box-shadow: 0 4px 8px rgba(0,0,0,.12);
+}
+.step-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.step-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Tab content */
+.tab-content { display: none; padding: 8px 0; animation: fadeIn .3s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Flow button */
+.flow-section {
+  text-align: center; padding: 24px; margin-bottom: 20px;
+  background: linear-gradient(135deg, #fafafe, #f0f0ff);
+  border-radius: var(--radius); border: 1px dashed #c7d2fe;
+}
+.flow-section p { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>企业文档系统 - 设计模式综合演示</h1>
-  <p>
-    <span class="badge badge-blue">组合模式</span>
-    <span class="badge badge-yellow">责任链模式</span>
-    <span class="badge badge-purple">装饰器模式</span>
-    <span class="badge badge-green">策略模式</span>
-    <span class="badge badge-cyan">迭代器模式</span>
-    <span class="badge badge-purple">访问者模式</span>
-    <span class="badge badge-red">单例模式</span>
-  </p>
+  <div class="header-content">
+    <h1>企业文档系统 - 设计模式综合演示</h1>
+    <p>基于 Spring Boot 的设计模式教学演示平台，涵盖 7 种经典设计模式的实际应用</p>
+    <div class="badges">
+      <span class="badge">Composite 组合模式</span>
+      <span class="badge">Chain of Responsibility 责任链</span>
+      <span class="badge">Decorator 装饰器</span>
+      <span class="badge">Strategy 策略模式</span>
+      <span class="badge">Iterator 迭代器</span>
+      <span class="badge">Visitor 访问者</span>
+      <span class="badge">Singleton 单例</span>
+    </div>
+  </div>
 </div>
 
 <!-- Tab Bar -->
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="switchTab(0, this)">① 创建订单</button>
-  <button class="tab-btn" onclick="switchTab(1, this)">② 审批订单</button>
-  <button class="tab-btn" onclick="switchTab(2, this)">③ 生成文档</button>
-  <button class="tab-btn" onclick="switchTab(3, this)">④ 保存文件</button>
-  <button class="tab-btn" onclick="switchTab(4, this)">⑤ 遍历文件</button>
-  <button class="tab-btn" onclick="switchTab(5, this)">⑥ 支付订单</button>
+  <button class="tab-btn active" onclick="switchTab(0, this)"><span class="step-badge" style="background:var(--primary)">1</span>创建订单</button>
+  <button class="tab-btn" onclick="switchTab(1, this)"><span class="step-badge" style="background:var(--warning)">2</span>审批订单</button>
+  <button class="tab-btn" onclick="switchTab(2, this)"><span class="step-badge" style="background:var(--purple)">3</span>生成文档</button>
+  <button class="tab-btn" onclick="switchTab(3, this)"><span class="step-badge" style="background:var(--success)">4</span>保存文件</button>
+  <button class="tab-btn" onclick="switchTab(4, this)"><span class="step-badge" style="background:var(--cyan)">5</span>遍历文件</button>
+  <button class="tab-btn" onclick="switchTab(5, this)"><span class="step-badge" style="background:var(--danger)">6</span>支付订单</button>
 </div>
 
 <div class="container">
-  <!-- 共享的订单表单 -->
-  <div class="card">
-    <h3>订单信息</h3>
+  <!-- Shared Form -->
+  <div class="form-section">
+    <div class="form-section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      订单信息配置
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label>订单类型</label>
@@ -128,97 +289,142 @@ body { font-family: "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #
     </div>
   </div>
 
+  <!-- Quick Flow -->
+  <div class="flow-section">
+    <p>一键执行完整流程：创建订单 → 审批 → 生成文档 → 保存 → 遍历 → 支付</p>
+    <button class="btn btn-full" onclick="runFullFlow()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      执行完整流程
+    </button>
+  </div>
+
   <!-- Tab 1: 创建订单 -->
   <div id="tab-0" class="tab-content active">
     <div class="step-header">
-      <div class="step-num" style="background:#3b82f6">1</div>
-      <div><h3 style="margin:0;border:none;padding:0">创建订单 - 组合模式 (Composite)</h3></div>
+      <div class="step-num" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark))">1</div>
+      <div>
+        <div class="step-title">创建订单</div>
+        <div class="step-subtitle">组合模式 Composite Pattern</div>
+      </div>
     </div>
     <div class="pattern-info">
       <strong>SimpleOrder</strong> 实现 OrderComponent 接口，是组合模式的叶子节点。<br>
       <strong>CompositeOrder</strong> 可包含多个子订单，总金额为子订单金额之和，是组合模式的容器节点。
     </div>
-    <button class="btn btn-blue" onclick="runStep('create')">执行：创建订单</button>
-    <div class="card" style="margin-top:12px"><h3>执行日志</h3><div id="log-0" class="log-box">点击按钮执行...</div></div>
+    <button class="btn btn-primary" onclick="runStep('create')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      执行：创建订单
+    </button>
+    <div class="card" style="margin-top:16px"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-0" class="log-box">点击按钮执行...</div></div>
   </div>
 
   <!-- Tab 2: 审批订单 -->
   <div id="tab-1" class="tab-content">
     <div class="step-header">
-      <div class="step-num" style="background:#f59e0b">2</div>
-      <div><h3 style="margin:0;border:none;padding:0">审批订单 - 责任链模式 (Chain of Responsibility)</h3></div>
+      <div class="step-num" style="background:linear-gradient(135deg,var(--warning),#d97706)">2</div>
+      <div>
+        <div class="step-title">审批订单</div>
+        <div class="step-subtitle">责任链模式 Chain of Responsibility</div>
+      </div>
     </div>
     <div class="pattern-info">
       <strong>ManagerApprover</strong> 处理金额 &lt; 1000 的订单。<br>
       <strong>DirectorApprover</strong> 处理金额 &lt; 5000 的订单。<br>
       审批链：经理 → 总监，逐级审批，超出权限则传递到下一级。
     </div>
-    <button class="btn btn-yellow" onclick="runStep('approve')">执行：审批订单</button>
-    <div class="card" style="margin-top:12px"><h3>执行日志</h3><div id="log-1" class="log-box">点击按钮执行...</div></div>
+    <button class="btn btn-warning" onclick="runStep('approve')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      执行：审批订单
+    </button>
+    <div class="card" style="margin-top:16px"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-1" class="log-box">点击按钮执行...</div></div>
   </div>
 
   <!-- Tab 3: 生成文档 -->
   <div id="tab-2" class="tab-content">
     <div class="step-header">
-      <div class="step-num" style="background:#a855f7">3</div>
-      <div><h3 style="margin:0;border:none;padding:0">生成文档 - 组合模式 + 装饰器模式 (Decorator)</h3></div>
+      <div class="step-num" style="background:linear-gradient(135deg,var(--purple),#7c3aed)">3</div>
+      <div>
+        <div class="step-title">生成文档</div>
+        <div class="step-subtitle">组合模式 + 装饰器模式 Decorator Pattern</div>
+      </div>
     </div>
     <div class="pattern-info">
       <strong>CompositeElement</strong> 包含多个 <strong>TextElement</strong>，组成文档树（组合模式）。<br>
       <strong>BoldDecorator</strong> 包装文档组件，添加 &lt;b&gt; 标签格式化输出（装饰器模式）。
     </div>
-    <button class="btn btn-purple" onclick="runStep('document')">执行：生成并装饰文档</button>
-    <div class="card" style="margin-top:12px"><h3>执行日志</h3><div id="log-2" class="log-box">点击按钮执行...</div></div>
+    <button class="btn btn-purple" onclick="runStep('document')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      执行：生成并装饰文档
+    </button>
+    <div class="card" style="margin-top:16px"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-2" class="log-box">点击按钮执行...</div></div>
   </div>
 
   <!-- Tab 4: 保存文件 -->
   <div id="tab-3" class="tab-content">
     <div class="step-header">
-      <div class="step-num" style="background:#22c55e">4</div>
-      <div><h3 style="margin:0;border:none;padding:0">保存文件 - 策略模式 (Strategy)</h3></div>
+      <div class="step-num" style="background:linear-gradient(135deg,var(--success),#059669)">4</div>
+      <div>
+        <div class="step-title">保存文件</div>
+        <div class="step-subtitle">策略模式 Strategy Pattern</div>
+      </div>
     </div>
     <div class="pattern-info">
       <strong>HtmlSaveStrategy</strong> 实现 SaveStrategy 接口，将文档保存为 HTML 和 TXT 两种格式。<br>
       通过策略模式，可以轻松切换不同的保存方式（如 PDF、Word 等）。
     </div>
-    <button class="btn btn-green" onclick="runStep('save')">执行：保存文档</button>
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card"><h3>执行日志</h3><div id="log-3" class="log-box">点击按钮执行...</div></div>
-      <div class="card"><h3>文件结构</h3><div id="tree-3" class="tree" style="color:#94a3b8">执行后显示...</div></div>
+    <button class="btn btn-success" onclick="runStep('save')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      执行：保存文档
+    </button>
+    <div class="grid-2" style="margin-top:16px">
+      <div class="card"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-3" class="log-box">点击按钮执行...</div></div>
+      <div class="card"><h3><span class="icon">&#128193;</span> 文件结构</h3><div id="tree-3" class="tree" style="color:var(--text-muted)">执行后显示...</div></div>
     </div>
   </div>
 
   <!-- Tab 5: 遍历文件 -->
   <div id="tab-4" class="tab-content">
     <div class="step-header">
-      <div class="step-num" style="background:#06b6d4">5</div>
-      <div><h3 style="margin:0;border:none;padding:0">遍历文件 - 迭代器模式 + 访问者模式</h3></div>
+      <div class="step-num" style="background:linear-gradient(135deg,var(--cyan),#0891b2)">5</div>
+      <div>
+        <div class="step-title">遍历文件</div>
+        <div class="step-subtitle">迭代器模式 + 访问者模式 Iterator & Visitor</div>
+      </div>
     </div>
     <div class="pattern-info">
       <strong>FileSystemIterator</strong> 使用栈实现深度优先遍历（迭代器模式）。<br>
       <strong>StatsVisitor</strong> 收集每个节点的统计信息（访问者模式）。<br>
       <strong>Directory + File</strong> 构成树形文件系统（组合模式）。
     </div>
-    <button class="btn btn-cyan" onclick="runStep('traverse')">执行：遍历文件系统</button>
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card"><h3>执行日志</h3><div id="log-4" class="log-box">点击按钮执行...</div></div>
-      <div class="card"><h3>文件结构树</h3><div id="tree-4" class="tree" style="color:#94a3b8">执行后显示...</div></div>
+    <button class="btn btn-cyan" onclick="runStep('traverse')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      执行：遍历文件系统
+    </button>
+    <div class="grid-2" style="margin-top:16px">
+      <div class="card"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-4" class="log-box">点击按钮执行...</div></div>
+      <div class="card"><h3><span class="icon">&#128193;</span> 文件结构树</h3><div id="tree-4" class="tree" style="color:var(--text-muted)">执行后显示...</div></div>
     </div>
   </div>
 
   <!-- Tab 6: 支付订单 -->
   <div id="tab-5" class="tab-content">
     <div class="step-header">
-      <div class="step-num" style="background:#ef4444">6</div>
-      <div><h3 style="margin:0;border:none;padding:0">支付订单 - 策略模式 (Strategy)</h3></div>
+      <div class="step-num" style="background:linear-gradient(135deg,var(--danger),#dc2626)">6</div>
+      <div>
+        <div class="step-title">支付订单</div>
+        <div class="step-subtitle">策略模式 Strategy Pattern</div>
+      </div>
     </div>
     <div class="pattern-info">
       <strong>CreditCardStrategy</strong> 信用卡支付策略。<br>
       <strong>AlipayStrategy</strong> 支付宝支付策略。<br>
       通过策略模式，运行时可动态切换支付方式，无需修改代码。
     </div>
-    <button class="btn btn-red" onclick="runStep('pay')">执行：支付订单</button>
-    <div class="card" style="margin-top:12px"><h3>执行日志</h3><div id="log-5" class="log-box">点击按钮执行...</div></div>
+    <button class="btn btn-danger" onclick="runStep('pay')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      执行：支付订单
+    </button>
+    <div class="card" style="margin-top:16px"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-5" class="log-box">点击按钮执行...</div></div>
   </div>
 </div>
 
@@ -255,7 +461,7 @@ async function callApi(endpoint, params) {
     });
     return await res.json();
   } catch (e) {
-    return { output: '请求失败: ' + e.message + '\n请确认后端已启动', error: true };
+    return { output: '请求失败: ' + e.message + '\n请确认后端已启动 (mvn spring-boot:run)', error: true };
   }
 }
 
@@ -263,11 +469,11 @@ function renderTree(nodes) {
   let html = '';
   nodes.forEach(n => {
     if (n.type === 'directory') {
-      html += '<div class="tree-node">📁 <span class="tree-dir">' + n.name + '</span>';
+      html += '<div class="tree-node">&#128193; <span class="tree-dir">' + n.name + '</span>';
       if (n.children) html += '<div class="tree-children">' + renderTree(n.children) + '</div>';
       html += '</div>';
     } else {
-      html += '<div class="tree-node">📄 <span class="tree-file">' + n.name + '</span></div>';
+      html += '<div class="tree-node">&#128196; <span class="tree-file">' + n.name + '</span></div>';
     }
   });
   return html;
@@ -283,6 +489,22 @@ async function runStep(step) {
   logEl.textContent = data.output || '无输出';
   if (data.tree) {
     const treeEl = document.getElementById('tree-' + idx);
+    if (treeEl) treeEl.innerHTML = renderTree(data.tree);
+  }
+}
+
+async function runFullFlow() {
+  // Switch to tab 0 first
+  const firstTab = document.querySelector('.tab-btn');
+  switchTab(0, firstTab);
+
+  const logEl = document.getElementById('log-0');
+  logEl.textContent = '正在执行完整流程，请稍候...';
+
+  const data = await callApi('full', getParams());
+  logEl.textContent = data.output || '无输出';
+  if (data.tree) {
+    const treeEl = document.getElementById('tree-3');
     if (treeEl) treeEl.innerHTML = renderTree(data.tree);
   }
 }
