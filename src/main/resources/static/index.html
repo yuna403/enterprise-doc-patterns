@@ -222,6 +222,35 @@ body {
   border-radius: var(--radius); border: 1px dashed #c7d2fe;
 }
 .flow-section p { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+
+/* Composite Items */
+.composite-items { margin-top: 16px; display: none; }
+.composite-items.active { display: block; }
+.composite-items h4 {
+  font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.composite-items table {
+  width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px;
+}
+.composite-items th, .composite-items td {
+  padding: 8px 12px; text-align: left; border: 1px solid var(--border);
+}
+.composite-items th {
+  background: linear-gradient(135deg, #f0f0ff, #f8f8ff);
+  font-weight: 600; color: var(--text);
+}
+.composite-items td input {
+  width: 100%; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px;
+  font-size: 13px; outline: none;
+}
+.composite-items .btn-sm {
+  padding: 5px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; border: none;
+  color: #fff; font-weight: 500;
+}
+.btn-add { background: linear-gradient(135deg, var(--success), #059669); }
+.btn-remove { background: linear-gradient(135deg, var(--danger), #dc2626); }
+.composite-items .actions { display: flex; gap: 8px; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -285,6 +314,35 @@ body {
       <div class="form-group">
         <label>卡号/账号</label>
         <input id="cardNumber" value="4111-1111-1111-1111">
+      </div>
+    </div>
+    <!-- 子订单配置（仅组合订单显示） -->
+    <div id="compositeItems" class="composite-items">
+      <h4>&#128230; 子订单列表</h4>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50%">产品名称</th>
+            <th style="width:30%">金额 ($)</th>
+            <th style="width:20%">操作</th>
+          </tr>
+        </thead>
+        <tbody id="compositeItemsBody">
+          <tr>
+            <td><input type="text" class="sub-product" value="MacBook Pro"></td>
+            <td><input type="number" class="sub-amount" value="3500"></td>
+            <td><button class="btn-sm btn-remove" onclick="removeSubItem(this)">删除</button></td>
+          </tr>
+          <tr>
+            <td><input type="text" class="sub-product" value="iPhone 15"></td>
+            <td><input type="number" class="sub-amount" value="1200"></td>
+            <td><button class="btn-sm btn-remove" onclick="removeSubItem(this)">删除</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="actions">
+        <button class="btn-sm btn-add" onclick="addSubItem()">+ 添加子订单</button>
+        <span id="subTotal" style="font-size:13px;color:var(--text-muted);margin-left:auto;"></span>
       </div>
     </div>
   </div>
@@ -439,10 +497,18 @@ function getParams() {
     cardNumber: document.getElementById('cardNumber').value
   };
   if (orderType === 'composite') {
-    params.items = [
-      { productName: 'MacBook Pro', amount: 3500 },
-      { productName: 'iPhone 15', amount: 1200 }
-    ];
+    const items = [];
+    document.querySelectorAll('#compositeItemsBody tr').forEach(function(row) {
+      const productInput = row.querySelector('.sub-product');
+      const amountInput = row.querySelector('.sub-amount');
+      if (productInput && amountInput) {
+        items.push({
+          productName: productInput.value,
+          amount: parseFloat(amountInput.value) || 0
+        });
+      }
+    });
+    params.items = items;
   }
   return params;
 }
@@ -451,6 +517,35 @@ function toggleOrderType() {
   const type = document.getElementById('orderType').value;
   document.getElementById('fg-product').style.display = type === 'composite' ? 'none' : 'flex';
   document.getElementById('fg-amount').style.display = type === 'composite' ? 'none' : 'flex';
+  document.getElementById('compositeItems').classList.toggle('active', type === 'composite');
+  updateSubTotal();
+}
+
+function updateSubTotal() {
+  let total = 0;
+  document.querySelectorAll('.sub-amount').forEach(function(input) {
+    total += parseFloat(input.value) || 0;
+  });
+  const label = document.getElementById('subTotal');
+  if (label) label.textContent = '子订单总金额: $' + total;
+}
+
+function addSubItem() {
+  const tbody = document.getElementById('compositeItemsBody');
+  const row = document.createElement('tr');
+  row.innerHTML = '<td><input type="text" class="sub-product" value="New Product" placeholder="产品名称"></td>' +
+                  '<td><input type="number" class="sub-amount" value="0" placeholder="金额"></td>' +
+                  '<td><button class="btn-sm btn-remove" onclick="removeSubItem(this)">删除</button></td>';
+  tbody.appendChild(row);
+  updateSubTotal();
+}
+
+function removeSubItem(btn) {
+  const row = btn.closest('tr');
+  if (row) {
+    row.remove();
+    updateSubTotal();
+  }
 }
 
 function switchTab(index, btn) {
