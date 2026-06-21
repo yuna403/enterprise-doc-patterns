@@ -12,11 +12,11 @@
     </parent>
 
     <groupId>com.example</groupId>
-    <artifactId>design-patterns-demo</artifactId>
+    <artifactId>enterprise-doc-patterns</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
-    <name>design-patterns-demo</name>
-    <description>设计模式综合演示 - Web版本</description>
+    <name>enterprise-doc-patterns</name>
+    <description>企业文档系统 - 设计模式教学演示平台</description>
 
     <properties>
         <java.version>1.8</java.version>
