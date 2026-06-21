@@ -87,8 +87,13 @@ public class DemoController {
             document.add(new TextElement("Order ID: " + timestamp));
             if (order instanceof SimpleOrder) {
                 document.add(new TextElement("Product: " + ((SimpleOrder) order).getProductName()));
-            } else {
+            } else if (order instanceof CompositeOrder) {
                 document.add(new TextElement("Type: 组合订单"));
+                for (OrderComponent child : ((CompositeOrder) order).getChildren()) {
+                    if (child instanceof SimpleOrder) {
+                        document.add(new TextElement("Product: " + ((SimpleOrder) child).getProductName()));
+                    }
+                }
             }
             document.add(new TextElement("Amount: $" + order.getAmount()));
 
@@ -115,6 +120,16 @@ public class DemoController {
 
             CompositeElement document = new CompositeElement();
             document.add(new TextElement("Order ID: " + timestamp));
+            if (order instanceof CompositeOrder) {
+                document.add(new TextElement("Type: 组合订单"));
+                for (OrderComponent child : ((CompositeOrder) order).getChildren()) {
+                    if (child instanceof SimpleOrder) {
+                        document.add(new TextElement("Product: " + ((SimpleOrder) child).getProductName()));
+                    }
+                }
+            } else if (order instanceof SimpleOrder) {
+                document.add(new TextElement("Product: " + ((SimpleOrder) order).getProductName()));
+            }
             document.add(new TextElement("Amount: $" + order.getAmount()));
             BoldDecorator decorated = new BoldDecorator(document);
 
@@ -244,7 +259,16 @@ public class DemoController {
             System.out.println("\n===== Step 3: 生成文档 (组合模式 + 装饰器模式) =====");
             CompositeElement document = new CompositeElement();
             document.add(new TextElement("Order ID: " + timestamp));
-            document.add(new TextElement("Product: " + productName));
+            if (order instanceof CompositeOrder) {
+                document.add(new TextElement("Type: 组合订单"));
+                for (OrderComponent child : ((CompositeOrder) order).getChildren()) {
+                    if (child instanceof SimpleOrder) {
+                        document.add(new TextElement("Product: " + ((SimpleOrder) child).getProductName()));
+                    }
+                }
+            } else if (order instanceof SimpleOrder) {
+                document.add(new TextElement("Product: " + ((SimpleOrder) order).getProductName()));
+            }
             document.add(new TextElement("Amount: $" + order.getAmount()));
             System.out.println("文档元素:");
             document.print();

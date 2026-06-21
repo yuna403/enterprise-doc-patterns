@@ -430,13 +430,21 @@ body {
 
 <script>
 function getParams() {
-  return {
-    orderType: document.getElementById('orderType').value,
+  const orderType = document.getElementById('orderType').value;
+  const params = {
+    orderType: orderType,
     productName: document.getElementById('productName').value,
     amount: parseFloat(document.getElementById('amount').value) || 3500,
     paymentMethod: document.getElementById('paymentMethod').value,
     cardNumber: document.getElementById('cardNumber').value
   };
+  if (orderType === 'composite') {
+    params.items = [
+      { productName: 'MacBook Pro', amount: 3500 },
+      { productName: 'iPhone 15', amount: 1200 }
+    ];
+  }
+  return params;
 }
 
 function toggleOrderType() {
