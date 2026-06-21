@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>企业文档系统 - 设计模式综合演示</title>
+<style>
+:root {
+  --primary: #6366f1; --primary-light: #818cf8; --primary-dark: #4f46e5;
+  --bg: #f8fafc; --card-bg: #ffffff; --text: #1e293b; --text-muted: #64748b;
+  --border: #e2e8f0; --success: #10b981; --warning: #f59e0b;
+  --danger: #ef4444; --info: #3b82f6; --purple: #a855f7; --cyan: #06b6d4;
+  --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+.header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); color: #fff; padding: 28px 32px 22px; position: relative; overflow: hidden; }
+.header::before { content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,.06) 0%, transparent 70%); border-radius: 50%; }
+.header-content { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+.header h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; margin-bottom: 8px; }
+.header p { font-size: 13px; color: rgba(255,255,255,.7); margin-bottom: 14px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; background: rgba(255,255,255,.12); color: rgba(255,255,255,.9); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,.08); }
+.tab-bar { background: var(--card-bg); display: flex; padding: 0 16px; overflow-x: auto; border-bottom: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,.03); position: sticky; top: 0; z-index: 10; }
+.tab-btn { padding: 14px 22px; cursor: pointer; font-size: 13px; border: none; background: none; color: var(--text-muted); border-bottom: 2.5px solid transparent; transition: all .2s; font-weight: 500; white-space: nowrap; }
+.tab-btn:hover { color: var(--primary); background: rgba(99,102,241,.03); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.tab-btn .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; margin-right: 6px; font-weight: 700; color: #fff; }
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 24px 48px; }
+.card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; border: 1px solid var(--border); transition: box-shadow .2s; }
+.card:hover { box-shadow: var(--shadow-lg); }
+.card h3 { font-size: 14px; color: var(--text); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.form-section { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; border: 1px solid var(--border); }
+.form-section-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.form-row { display: flex; gap: 16px; margin-bottom: 12px; align-items: flex-end; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+.form-group label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
+.form-group input, .form-group select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color .2s, box-shadow .2s; background: #fff; }
+.form-group input:focus, .form-group select:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+.btn { padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #fff; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+.btn-warning { background: linear-gradient(135deg, var(--warning), #d97706); }
+.btn-purple { background: linear-gradient(135deg, var(--purple), #7c3aed); }
+.btn-success { background: linear-gradient(135deg, var(--success), #059669); }
+.btn-cyan { background: linear-gradient(135deg, var(--cyan), #0891b2); }
+.btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); }
+.btn-full { background: linear-gradient(135deg, #1e1b4b, #4338ca); padding: 12px 28px; font-size: 14px; margin-top: 8px; }
+.log-box { background: #0f172a; color: #4ade80; font-family: "JetBrains Mono","Fira Code","Cascadia Code","Consolas",monospace; font-size: 12.5px; padding: 16px 18px; border-radius: 10px; min-height: 140px; max-height: 320px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.7; border: 1px solid #1e293b; }
+.log-box::-webkit-scrollbar { width: 6px; }
+.log-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+.tree { font-size: 13px; padding: 12px; }
+.tree-dir { color: var(--primary); font-weight: 600; }
+.tree-file { color: var(--success); }
+.tree-children { padding-left: 20px; border-left: 1.5px dashed var(--border); margin-left: 8px; }
+.tree-node { padding: 3px 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+.pattern-info { background: linear-gradient(135deg, #f0f0ff, #f8f8ff); border-radius: 10px; padding: 16px 18px; font-size: 13px; line-height: 1.9; color: #475569; margin-bottom: 16px; border: 1px solid #e0e7ff; }
+.pattern-info strong { color: var(--primary-dark); font-weight: 600; }
+.step-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.step-num { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,.12); }
+.step-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.step-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.tab-content { display: none; padding: 8px 0; animation: fadeIn .3s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.flow-section { text-align: center; padding: 24px; margin-bottom: 20px; background: linear-gradient(135deg, #fafafe, #f0f0ff); border-radius: var(--radius); border: 1px dashed #c7d2fe; }
+.flow-section p { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <h1>企业文档系统 - 设计模式综合演示</h1>
+    <p>基于 Spring Boot 的设计模式教学演示平台，涵盖 7 种经典设计模式的实际应用</p>
+    <div class="badges">
+      <span class="badge">Composite 组合模式</span>
+      <span class="badge">Chain of Responsibility 责任链</span>
+      <span class="badge">Decorator 装饰器</span>
+      <span class="badge">Strategy 策略模式</span>
+      <span class="badge">Iterator 迭代器</span>
+      <span class="badge">Visitor 访问者</span>
+      <span class="badge">Singleton 单例</span>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0, this)"><span class="step-badge" style="background:var(--primary)">1</span>创建订单</button>
+  <button class="tab-btn" onclick="switchTab(1, this)"><span class="step-badge" style="background:var(--warning)">2</span>审批订单</button>
+  <button class="tab-btn" onclick="switchTab(2, this)"><span class="step-badge" style="background:var(--purple)">3</span>生成文档</button>
+  <button class="tab-btn" onclick="switchTab(3, this)"><span class="step-badge" style="background:var(--success)">4</span>保存文件</button>
+  <button class="tab-btn" onclick="switchTab(4, this)"><span class="step-badge" style="background:var(--cyan)">5</span>遍历文件</button>
+  <button class="tab-btn" onclick="switchTab(5, this)"><span class="step-badge" style="background:var(--danger)">6</span>支付订单</button>
+</div>
+
+<div class="container">
+  <div class="form-section">
+    <div class="form-section-title">&#128196; 订单信息配置</div>
+    <div class="form-row">
+      <div class="form-group"><label>订单类型</label><select id="orderType" onchange="toggleOrderType()"><option value="simple">简单订单</option><option value="composite">组合订单</option></select></div>
+      <div class="form-group" id="fg-product"><label>产品名称</label><input id="productName" value="MacBook Pro"></div>
+      <div class="form-group" id="fg-amount"><label>金额 ($)</label><input id="amount" type="number" value="3500"></div>
+      <div class="form-group"><label>支付方式</label><select id="paymentMethod"><option value="信用卡">信用卡</option><option value="支付宝">支付宝</option></select></div>
+      <div class="form-group"><label>卡号/账号</label><input id="cardNumber" value="4111-1111-1111-1111"></div>
+    </div>
+  </div>
+
+  <div class="flow-section">
+    <p>一键执行完整流程：创建订单 → 审批 → 生成文档 → 保存 → 遍历 → 支付</p>
+    <button class="btn btn-full" onclick="runFullFlow()">&#9654; 执行完整流程</button>
+  </div>
+
+  <div id="tab-0" class="tab-content active">
+    <div class="step-header"><div class="step-num" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark))">1</div><div><div class="step-title">创建订单</div><div class="step-subtitle">组合模式 Composite Pattern</div></div></div>
+    <div class="pattern-info"><strong>SimpleOrder</strong> 实现 OrderComponent 接口，是组合模式的叶子节点。<br><strong>CompositeOrder</strong> 可包含多个子订单，总金额为子订单金额之和，是组合模式的容器节点。</div>
+    <button class="btn btn-primary" onclick="runStep('create')">&#9654; 执行：创建订单</button>
+    <div class="card" style="margin-top:16px"><h3>&#128187; 执行日志</h3><div id="log-0" class="log-box">点击按钮执行...</div></div>
+  </div>
+
+  <div id="tab-1" class="tab-content">
+    <div class="step-header"><div class="step-num" style="background:linear-gradient(135deg,var(--warning),#d97706)">2</div><div><div class="step-title">审批订单</div><div class="step-subtitle">责任链模式 Chain of Responsibility</div></div></div>
+    <div class="pattern-info"><strong>ManagerApprover</strong> 处理金额 &lt; 1000 的订单。<br><strong>DirectorApprover</strong> 处理金额 &lt; 5000 的订单。<br>审批链：经理 → 总监，逐级审批，超出权限则传递到下一级。</div>
+    <button class="btn btn-warning" onclick="runStep('approve')">&#9654; 执行：审批订单</button>
+    <div class="card" style="margin-top:16px"><h3>&#128187; 执行日志</h3><div id="log-1" class="log-box">点击按钮执行...</div></div>
+  </div>
+
+  <div id="tab-2" class="tab-content">
+    <div class="step-header"><div class="step-num" style="background:linear-gradient(135deg,var(--purple),#7c3aed)">3</div><div><div class="step-title">生成文档</div><div class="step-subtitle">组合模式 + 装饰器模式 Decorator Pattern</div></div></div>
+    <div class="pattern-info"><strong>CompositeElement</strong> 包含多个 <strong>TextElement</strong>，组成文档树（组合模式）。<br><strong>BoldDecorator</strong> 包装文档组件，添加 &lt;b&gt; 标签格式化输出（装饰器模式）。</div>
+    <button class="btn btn-purple" onclick="runStep('document')">&#9654; 执行：生成并装饰文档</button>
+    <div class="card" style="margin-top:16px"><h3>&#128187; 执行日志</h3><div id="log-2" class="log-box">点击按钮执行...</div></div>
+  </div>
+
+  <div id="tab-3" class="tab-content">
+    <div class="step-header"><div class="step-num" style="background:linear-gradient(135deg,var(--success),#059669)">4</div><div><div class="step-title">保存文件</div><div class="step-subtitle">策略模式 Strategy Pattern</div></div></div>
+    <div class="pattern-info"><strong>HtmlSaveStrategy</strong> 实现 SaveStrategy 接口，将文档保存为 HTML 和 TXT 两种格式。<br>通过策略模式，可以轻松切换不同的保存方式（如 PDF、Word 等）。</div>
+    <button class="btn btn-success" onclick="runStep('save')">&#9654; 执行：保存文档</button>
+    <div class="grid-2" style="margin-top:16px">
+      <div class="card"><h3>&#128187; 执行日志</h3><div id="log-3" class="log-box">点击按钮执行...</div></div>
+      <div class="card"><h3>&#128193; 文件结构</h3><div id="tree-3" class="tree" style="color:var(--text-muted)">执行后显示...</div></div>
+    </div>
+  </div>
+
+  <div id="tab-4" class="tab-content">
+    <div class="step-header"><div class="step-num" style="background:linear-gradient(135deg,var(--cyan),#0891b2)">5</div><div><div class="step-title">遍历文件</div><div class="step-subtitle">迭代器模式 + 访问者模式 Iterator & Visitor</div></div></div>
+    <div class="pattern-info"><strong>FileSystemIterator</strong> 使用栈实现深度优先遍历（迭代器模式）。<br><strong>StatsVisitor</strong> 收集每个节点的统计信息（访问者模式）。<br><strong>Directory + File</strong> 构成树形文件系统（组合模式）。</div>
+    <button class="btn btn-cyan" onclick="runStep('traverse')">&#9654; 执行：遍历文件系统</button>
+    <div class="grid-2" style="margin-top:16px">
+      <div class="card"><h3>&#128187; 执行日志</h3><div id="log-4" class="log-box">点击按钮执行...</div></div>
+      <div class="card"><h3>&#128193; 文件结构树</h3><div id="tree-4" class="tree" style="color:var(--text-muted)">执行后显示...</div></div>
+    </div>
+  </div>
+
+  <div id="tab-5" class="tab-content">
+    <div class="step-header"><div class="step-num" style="background:linear-gradient(135deg,var(--danger),#dc2626)">6</div><div><div class="step-title">支付订单</div><div class="step-subtitle">策略模式 Strategy Pattern</div></div></div>
+    <div class="pattern-info"><strong>CreditCardStrategy</strong> 信用卡支付策略。<br><strong>AlipayStrategy</strong> 支付宝支付策略。<br>通过策略模式，运行时可动态切换支付方式，无需修改代码。</div>
+    <button class="btn btn-danger" onclick="runStep('pay')">&#9654; 执行：支付订单</button>
+    <div class="card" style="margin-top:16px"><h3>&#128187; 执行日志</h3><div id="log-5" class="log-box">点击按钮执行...</div></div>
+  </div>
+</div>
+
+<script>
+// ============ 模拟后端设计模式逻辑 (纯前端) ============
+
+function getTimestamp() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+}
+
+function getParams() {
+  return {
+    orderType: document.getElementById('orderType').value,
+    productName: document.getElementById('productName').value,
+    amount: parseFloat(document.getElementById('amount').value) || 3500,
+    paymentMethod: document.getElementById('paymentMethod').value,
+    cardNumber: document.getElementById('cardNumber').value
+  };
+}
+
+function toggleOrderType() {
+  const type = document.getElementById('orderType').value;
+  document.getElementById('fg-product').style.display = type === 'composite' ? 'none' : 'flex';
+  document.getElementById('fg-amount').style.display = type === 'composite' ? 'none' : 'flex';
+}
+
+function switchTab(index, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + index).classList.add('active');
+}
+
+function renderTree(nodes) {
+  let html = '';
+  nodes.forEach(n => {
+    if (n.type === 'directory') {
+      html += '<div class="tree-node">\u{1F4C1} <span class="tree-dir">' + n.name + '</span>';
+      if (n.children) html += '<div class="tree-children">' + renderTree(n.children) + '</div>';
+      html += '</div>';
+    } else {
+      html += '<div class="tree-node">\u{1F4C4} <span class="tree-file">' + n.name + '</span></div>';
+    }
+  });
+  return html;
+}
+
+function buildFileTree(ts) {
+  return [{
+    name: 'output/', type: 'directory', children: [
+      { name: 'orders/', type: 'directory', children: [
+        { name: 'order_summary_' + ts + '.html', type: 'file' },
+        { name: 'order_summary_' + ts + '.txt', type: 'file' }
+      ]},
+      { name: 'docs/', type: 'directory', children: [
+        { name: 'readme.txt', type: 'file' }
+      ]}
+    ]
+  }];
+}
+
+// ===== 模拟各步骤输出 =====
+
+function simulateCreate(p) {
+  let out = '';
+  if (p.orderType === 'composite') {
+    const items = [{name: 'MacBook Pro', amount: 3500}, {name: 'iPhone 15', amount: 1200}];
+    out += '===== 创建组合订单 (组合模式) =====\n';
+    out += '===== 处理组合订单 =====\n';
+    items.forEach(i => out += '处理订单: ' + i.name + ' - $' + i.amount.toFixed(2) + '\n');
+    const total = items.reduce((s, i) => s + i.amount, 0);
+    out += '订单总金额: $' + total.toFixed(2) + '\n';
+  } else {
+    out += '===== 创建订单 (组合模式) =====\n';
+    out += '处理订单: ' + p.productName + ' - $' + p.amount.toFixed(2) + '\n';
+  }
+  return out;
+}
+
+function simulateApprove(p) {
+  const amount = p.orderType === 'composite' ? 4700 : p.amount;
+  let out = '===== 订单审批 (责任链模式) =====\n';
+  out += '审批链: 经理(金额<1000) -> 总监(金额<5000)\n';
+  if (amount < 1000) {
+    out += '经理审批通过\n';
+  } else if (amount < 5000) {
+    out += '总监审批通过\n';
+  } else {
+    out += '订单需要更高权限审批\n';
+  }
+  return out;
+}
+
+function simulateDocument(p) {
+  const ts = getTimestamp();
+  const amount = p.orderType === 'composite' ? 4700 : p.amount;
+  let out = '===== 生成订单文档 (组合模式 + 装饰器模式) =====\n';
+  const elements = ['Order ID: ' + ts];
+  if (p.orderType === 'simple') elements.push('Product: ' + p.productName);
+  else elements.push('Type: 组合订单');
+  elements.push('Amount: $' + amount.toFixed(2));
+  out += '文档已生成 (' + elements.length + ' 个元素):\n';
+  elements.forEach(e => out += e + '\n');
+  out += '\n应用 BoldDecorator 装饰器:\n';
+  out += '<b>' + elements.join('\n') + '\n</b>\n';
+  return out;
+}
+
+function simulateSave(p) {
+  const ts = getTimestamp();
+  let out = '===== 保存文档 (策略模式) =====\n';
+  out += '保存文件: output/orders/order_summary_' + ts + '.html\n';
+  out += '保存文件: output/orders/order_summary_' + ts + '.txt\n';
+  out += '文件保存成功：output/orders/\n';
+  out += '生成文件：order_summary_' + ts + '.{html,txt}\n';
+  return { output: out, tree: buildFileTree(ts) };
+}
+
+function simulateTraverse() {
+  const ts = getTimestamp();
+  let out = '===== 文件系统遍历 (迭代器模式 + 访问者模式) =====\n';
+  const nodes = [
+    { type: 'dir', name: 'output/' },
+    { type: 'dir', name: 'orders/', children: 2 },
+    { type: 'file', name: 'order_summary_' + ts + '.txt' },
+    { type: 'file', name: 'order_history.txt' },
+    { type: 'dir', name: 'docs/', children: 1 },
+    { type: 'file', name: 'readme.txt' }
+  ];
+  nodes.forEach(n => {
+    if (n.type === 'dir') out += '目录: ' + n.name + (n.children !== undefined ? ' (子节点数: ' + n.children + ')' : '') + '\n';
+    else out += '文件: ' + n.name + '\n';
+  });
+  out += '遍历完成\n';
+  return { output: out, tree: buildFileTree(ts) };
+}
+
+function simulatePay(p) {
+  const amount = p.orderType === 'composite' ? 4700 : p.amount;
+  let out = '===== 订单支付 (策略模式) =====\n';
+  if (p.paymentMethod === '支付宝') {
+    out += '选择策略: 支付宝支付\n';
+    out += 'Paid ¥' + amount.toFixed(2) + ' via Alipay\n';
+  } else {
+    out += '选择策略: 信用卡支付\n';
+    const last4 = p.cardNumber.slice(-4);
+    out += 'Paying $' + amount.toFixed(2) + ' via Credit Card: ****-****-****-' + last4 + '\n';
+  }
+  return out;
+}
+
+function simulateFull(p) {
+  const ts = getTimestamp();
+  const amount = p.orderType === 'composite' ? 4700 : p.amount;
+  let out = '';
+
+  // Step 1
+  out += '===== Step 1: 创建订单 (组合模式) =====\n';
+  if (p.orderType === 'composite') {
+    out += '===== 处理组合订单 =====\n';
+    out += '处理订单: ' + p.productName + ' - $' + p.amount.toFixed(2) + '\n';
+    out += '处理订单: iPhone 15 - $1200.00\n';
+  } else {
+    out += '处理订单: ' + p.productName + ' - $' + p.amount.toFixed(2) + '\n';
+  }
+
+  // Step 2
+  out += '\n===== Step 2: 订单审批 (责任链模式) =====\n';
+  out += '审批链: 经理(金额<1000) -> 总监(金额<5000)\n';
+  if (amount < 1000) out += '经理审批通过\n';
+  else if (amount < 5000) out += '总监审批通过\n';
+  else out += '订单需要更高权限审批\n';
+
+  // Step 3
+  out += '\n===== Step 3: 生成文档 (组合模式 + 装饰器模式) =====\n';
+  const elems = ['Order ID: ' + ts, 'Product: ' + p.productName, 'Amount: $' + amount.toFixed(2)];
+  out += '文档元素:\n';
+  elems.forEach(e => out += e + '\n');
+  out += '装饰后输出:\n';
+  out += '<b>' + elems.join('\n') + '\n</b>\n';
+
+  // Step 4
+  out += '\n===== Step 4: 保存文档 (策略模式) =====\n';
+  out += '保存文件: output/orders/order_summary_' + ts + '.html\n';
+  out += '保存文件: output/orders/order_summary_' + ts + '.txt\n';
+  out += '文件保存成功：output/orders/\n';
+
+  // Step 5
+  out += '\n===== Step 5: 文件系统遍历 (迭代器 + 访问者模式) =====\n';
+  out += '目录: output/ \n';
+  out += '目录: orders/ (子节点数: 1)\n';
+  out += '文件: order_summary_' + ts + '.txt\n';
+  out += '文件: order_summary_' + ts + '.txt\n';
+
+  // Step 6
+  out += '\n===== Step 6: 订单支付 (策略模式) =====\n';
+  if (p.paymentMethod === '支付宝') {
+    out += '选择策略: 支付宝支付\n';
+    out += 'Paid ¥' + amount.toFixed(2) + ' via Alipay\n';
+  } else {
+    out += '选择策略: 信用卡支付\n';
+    out += 'Paying $' + amount.toFixed(2) + ' via Credit Card: ****-****-****-' + p.cardNumber.slice(-4) + '\n';
+  }
+  out += '\n===== 全部流程执行完毕 =====\n';
+
+  return { output: out, tree: buildFileTree(ts) };
+}
+
+// ===== 执行入口 =====
+
+const tabMap = { create: 0, approve: 1, document: 2, save: 3, traverse: 4, pay: 5 };
+
+function runStep(step) {
+  const p = getParams();
+  const idx = tabMap[step];
+  const logEl = document.getElementById('log-' + idx);
+  let result;
+  switch (step) {
+    case 'create':   result = { output: simulateCreate(p) }; break;
+    case 'approve':  result = { output: simulateApprove(p) }; break;
+    case 'document': result = { output: simulateDocument(p) }; break;
+    case 'save':     result = simulateSave(p); break;
+    case 'traverse': result = simulateTraverse(); break;
+    case 'pay':      result = { output: simulatePay(p) }; break;
+  }
+  logEl.textContent = result.output;
+  if (result.tree) {
+    const treeEl = document.getElementById('tree-' + idx);
+    if (treeEl) treeEl.innerHTML = renderTree(result.tree);
+  }
+}
+
+function runFullFlow() {
+  const firstTab = document.querySelector('.tab-btn');
+  switchTab(0, firstTab);
+  const p = getParams();
+  const result = simulateFull(p);
+  document.getElementById('log-0').textContent = result.output;
+  if (result.tree) {
+    const treeEl = document.getElementById('tree-3');
+    if (treeEl) treeEl.innerHTML = renderTree(result.tree);
+  }
+}
+</script>
+</body>
+</html>
