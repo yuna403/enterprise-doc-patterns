@@ -35,3 +35,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Vercel ###
+.vercel-tmp/
+.vercel/
