@@ -74,7 +74,7 @@ src/main/java/com/eds/
 
 ```bash
 # 克隆项目
-git clone https://github.com/yuna403/design-patterns-demo.git
+git clone https://github.com/yuna403/enterprise-doc-patterns.git
 
 # 进入项目目录
 cd enterprise-doc-patterns
