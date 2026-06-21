@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
+    <groupId>com.eds</groupId>
     <artifactId>enterprise-doc-patterns</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>

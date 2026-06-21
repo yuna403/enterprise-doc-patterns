@@ -1,4 +1,4 @@
-package gui;
+package com.eds.web;
 
 import org.springframework.web.bind.annotation.*;
 
