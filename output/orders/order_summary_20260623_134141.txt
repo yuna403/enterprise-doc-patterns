@@ -1,0 +1,3 @@
+Order ID: 20260623_134141
+Product: MacBook Pro
+Amount: $3500.0
