@@ -640,79 +640,98 @@ function simulateBackend(endpoint, params) {
   const orderType = params.orderType || 'simple';
   const productName = params.productName || 'MacBook Pro';
   const amount = parseFloat(params.amount) || 3500;
-  const paymentMethod = params.paymentMethod || 'credit_card';
+  const paymentMethod = params.paymentMethod || '信用卡';
+  const cardNumber = params.cardNumber || '4111-1111-1111-1111';
   
   let output = '';
   let tree = null;
   
   switch (endpoint) {
     case 'create':
-      output = `✅ 订单创建成功\n\n`;
+      output += '===== 创建订单 (组合模式) =====\n';
       if (orderType === 'composite') {
-        output += `组合订单 ID: ${Date.now()}\n包含 ${params.items ? params.items.length : 2} 个子订单\n总金额: $${amount}\n时间: ${timestamp}`;
+        const items = params.items || [
+          { productName: 'MacBook Pro', amount: 3500 },
+          { productName: 'iPhone 15', amount: 1200 }
+        ];
+        output += '===== 处理组合订单 =====\n';
+        items.forEach(item => {
+          output += `处理订单: ${item.productName} - $${item.amount.toFixed(2)}\n`;
+        });
+        const total = items.reduce((sum, item) => sum + item.amount, 0);
+        output += `订单总金额: $${total.toFixed(2)}\n`;
       } else {
-        output += `简单订单 ID: ${Date.now()}\n产品: ${productName}\n金额: $${amount.toFixed(2)}\n时间: ${timestamp}`;
+        output += `处理订单: ${productName} - $${amount.toFixed(2)}\n`;
       }
       break;
       
     case 'approve':
-      output = `✅ 审批流程完成\n\n`;
-      output += `订单 ID: ${Date.now()}\n`;
-      output += `审批状态: 已通过\n`;
-      output += `审批人: Manager -> Director\n`;
-      output += `审批时间: ${timestamp}`;
+      output += '===== 订单审批 (责任链模式) =====\n';
+      output += '审批链: 经理(金额<1000) -> 总监(金额<5000)\n';
+      if (amount < 1000) {
+        output += '经理审批通过\n';
+      } else if (amount < 5000) {
+        output += '总监审批通过\n';
+      } else {
+        output += '订单需要更高权限审批\n';
+      }
       break;
       
     case 'document':
-      output = `✅ 文档生成成功\n\n`;
-      output += `文档类型: HTML\n`;
-      output += `文件路径: data/enterprise_docs/orders/order_${Date.now()}.html\n`;
-      output += `生成时间: ${timestamp}\n`;
-      output += `\n内容预览:\n`;
-      output += `========================================\n`;
-      output += `Order Summary\n`;
-      output += `Generated: ${timestamp}\n`;
-      output += `Type: ${orderType === 'composite' ? 'Composite Order' : 'Simple Order'}\n`;
+      const docTimestamp = Date.now().toString().slice(-14);
+      output += '===== 生成订单文档 (组合模式 + 装饰器模式) =====\n';
+      output += `Order ID: ${docTimestamp}\n`;
       if (orderType === 'composite') {
-        output += `Items: ${params.items ? params.items.length : 2} items\n`;
+        output += 'Type: 组合订单\n';
+        const items = params.items || [];
+        items.forEach(item => {
+          output += `Product: ${item.productName}\n`;
+        });
       } else {
         output += `Product: ${productName}\n`;
-        output += `Amount: $${amount.toFixed(2)}\n`;
       }
-      output += `========================================`;
+      output += `Amount: $${amount.toFixed(2)}\n`;
+      output += '\n应用 BoldDecorator 装饰器:\n';
+      output += `<b>Order ID: ${docTimestamp}\n`;
+      if (orderType === 'composite') {
+        output += 'Type: 组合订单\n';
+        const items = params.items || [];
+        items.forEach(item => {
+          output += `Product: ${item.productName}\n`;
+        });
+      } else {
+        output += `Product: ${productName}\n`;
+      }
+      output += `Amount: $${amount.toFixed(2)}</b>\n`;
       break;
       
     case 'save':
-      output = `✅ 文件保存成功\n\n`;
-      output += `策略: HtmlSaveStrategy / PdfSaveStrategy\n`;
-      output += `保存路径: data/enterprise_docs/orders/\n`;
-      output += `文件名: order_${Date.now()}.html\n`;
-      output += `保存时间: ${timestamp}\n`;
-      output += `\n文件系统结构:\n`;
-      output += `data/\n`;
-      output += `└── enterprise_docs/\n`;
-      output += `    └── orders/\n`;
-      output += `        ├── order_summary.html\n`;
-      output += `        └── order_${Date.now()}.html`;
+      const saveTimestamp = Date.now().toString().slice(-14);
+      output += '===== 保存文档 (策略模式) =====\n';
+      output += `文件保存成功：${saveTimestamp}\n`;
+      output += `生成文件：order_summary_${saveTimestamp}.{html,txt}\n`;
+      output += '保存路径: output/orders/\n';
+      output += '\n提示: 打开生成的 .html 文件，点击\'🖨️ 打印 / 另存为PDF\'按钮即可导出PDF\n';
       
       // 构建文件树
       tree = [
         {
           type: 'directory',
-          name: 'data',
+          name: 'output/',
           children: [
             {
               type: 'directory',
-              name: 'enterprise_docs',
+              name: 'orders/',
               children: [
-                {
-                  type: 'directory',
-                  name: 'orders',
-                  children: [
-                    { type: 'file', name: 'order_summary.html' },
-                    { type: 'file', name: `order_${Date.now()}.html` }
-                  ]
-                }
+                { type: 'file', name: `order_summary_${saveTimestamp}.html` },
+                { type: 'file', name: `order_summary_${saveTimestamp}.txt` }
+              ]
+            },
+            {
+              type: 'directory',
+              name: 'docs/',
+              children: [
+                { type: 'file', name: 'readme.txt' }
               ]
             }
           ]
@@ -721,66 +740,111 @@ function simulateBackend(endpoint, params) {
       break;
       
     case 'traverse':
-      output = `✅ 遍历文件系统\n\n`;
-      output += `访问者模式: StatsVisitor\n`;
-      output += `统计结果:\n`;
-      output += `- 总文件数: 15\n`;
-      output += `- 总目录数: 8\n`;
-      output += `- 总大小: 45.6 KB\n`;
-      output += `- 最后修改: ${timestamp}`;
+      const travTimestamp = Date.now().toString().slice(-14);
+      output += '===== 文件系统遍历 (迭代器模式 + 访问者模式) =====\n';
+      output += `目录: output/ (子节点数: 2)\n`;
+      output += `目录: orders/ (子节点数: 2)\n`;
+      output += `文件: order_summary_${travTimestamp}.txt\n`;
+      output += `文件: order_history.txt\n`;
+      output += `目录: docs/ (子节点数: 1)\n`;
+      output += `文件: readme.txt\n`;
+      output += '遍历完成\n';
       
       tree = [
-        { type: 'directory', name: 'data', children: [
-          { type: 'directory', name: 'enterprise_docs', children: [
-            { type: 'directory', name: 'orders', children: [
-              { type: 'file', name: 'order_summary.html' },
-              { type: 'file', name: 'order_001.html' },
-              { type: 'file', name: 'order_002.html' }
-            ]},
-            { type: 'directory', name: 'reports', children: [
-              { type: 'file', name: 'report_q1.html' },
-              { type: 'file', name: 'report_q2.html' }
-            ]}
+        { type: 'directory', name: 'output/', children: [
+          { type: 'directory', name: 'orders/', children: [
+            { type: 'file', name: `order_summary_${travTimestamp}.txt` },
+            { type: 'file', name: 'order_history.txt' }
+          ]},
+          { type: 'directory', name: 'docs/', children: [
+            { type: 'file', name: 'readme.txt' }
           ]}
         ]}
       ];
       break;
       
     case 'pay':
-      output = `✅ 支付成功\n\n`;
-      output += `支付方式: ${paymentMethod === 'alipay' ? '支付宝' : '信用卡'}\n`;
-      output += `订单金额: $${amount.toFixed(2)}\n`;
-      output += `交易号: TXN${Date.now()}\n`;
-      output += `支付时间: ${timestamp}\n`;
-      output += `状态: 已确认`;
+      output += '===== 订单支付 (策略模式) =====\n';
+      if (paymentMethod === '支付宝') {
+        output += '选择策略: 支付宝支付\n';
+        output += `Paid ¥${amount.toFixed(2)} via Alipay\n`;
+      } else {
+        output += '选择策略: 信用卡支付\n';
+        const last4 = cardNumber.slice(-4);
+        output += `Paying $${amount.toFixed(2)} via Credit Card: ****-****-****-${last4}\n`;
+      }
       break;
       
     case 'full':
-      output = `🚀 完整流程执行完毕\n\n`;
-      output += `1️⃣ 创建订单: ✅ 成功\n`;
-      output += `   - 订单类型: ${orderType === 'composite' ? '组合订单' : '简单订单'}\n`;
-      output += `   - 金额: $${amount.toFixed(2)}\n\n`;
-      output += `2️⃣ 审批流程: ✅ 通过\n`;
-      output += `   - 审批链: Manager → Director\n\n`;
-      output += `3️⃣ 生成文档: ✅ 完成\n`;
-      output += `   - 格式: HTML + PDF\n\n`;
-      output += `4️⃣ 保存文件: ✅ 已保存\n`;
-      output += `   - 路径: data/enterprise_docs/orders/\n\n`;
-      output += `5️⃣ 遍历统计: ✅ 完成\n`;
-      output += `   - 文件数: 15, 目录数: 8\n\n`;
-      output += `6️⃣ 支付订单: ✅ 成功\n`;
-      output += `   - 方式: ${paymentMethod === 'alipay' ? '支付宝' : '信用卡'}\n`;
-      output += `   - 交易号: TXN${Date.now()}\n\n`;
-      output += `⏰ 执行时间: ${timestamp}`;
+      const fullTimestamp = Date.now().toString().slice(-14);
+      output += '===== Step 1: 创建订单 (组合模式) =====\n';
+      if (orderType === 'composite') {
+        const items = params.items || [
+          { productName: 'MacBook Pro', amount: 3500 },
+          { productName: 'iPhone 15', amount: 1200 }
+        ];
+        output += '===== 处理组合订单 =====\n';
+        items.forEach(item => {
+          output += `处理订单: ${item.productName} - $${item.amount.toFixed(2)}\n`;
+        });
+        const total = items.reduce((sum, item) => sum + item.amount, 0);
+        output += `订单总金额: $${total.toFixed(2)}\n`;
+      } else {
+        output += `处理订单: ${productName} - $${amount.toFixed(2)}\n`;
+      }
+      
+      output += '\n===== Step 2: 订单审批 (责任链模式) =====\n';
+      output += '审批链: 经理(金额<1000) -> 总监(金额<5000)\n';
+      if (amount < 1000) {
+        output += '经理审批通过\n';
+      } else if (amount < 5000) {
+        output += '总监审批通过\n';
+      } else {
+        output += '订单需要更高权限审批\n';
+      }
+      
+      output += '\n===== Step 3: 生成文档 (组合模式 + 装饰器模式) =====\n';
+      output += `Order ID: ${fullTimestamp}\n`;
+      if (orderType === 'composite') {
+        output += 'Type: 组合订单\n';
+      } else {
+        output += `Product: ${productName}\n`;
+      }
+      output += `Amount: $${amount.toFixed(2)}\n`;
+      output += '\n装饰后输出:\n';
+      output += `<b>Order ID: ${fullTimestamp}\n`;
+      if (orderType === 'composite') {
+        output += 'Type: 组合订单\n';
+      } else {
+        output += `Product: ${productName}\n`;
+      }
+      output += `Amount: $${amount.toFixed(2)}</b>\n`;
+      
+      output += '\n===== Step 4: 保存文档 (策略模式) =====\n';
+      output += `文件保存成功：${fullTimestamp}\n`;
+      
+      output += '\n===== Step 5: 文件系统遍历 (迭代器 + 访问者模式) =====\n';
+      output += `目录: output/ (子节点数: 1)\n`;
+      output += `目录: orders/ (子节点数: 1)\n`;
+      output += `文件: order_summary_${fullTimestamp}.txt\n`;
+      
+      output += '\n===== Step 6: 订单支付 (策略模式) =====\n';
+      if (paymentMethod === '支付宝') {
+        output += '选择策略: 支付宝支付\n';
+        output += `Paid ¥${amount.toFixed(2)} via Alipay\n`;
+      } else {
+        output += '选择策略: 信用卡支付\n';
+        const last4 = cardNumber.slice(-4);
+        output += `Paying $${amount.toFixed(2)} via Credit Card: ****-****-****-${last4}\n`;
+      }
+      
+      output += '\n===== 全部流程执行完毕 =====\n';
       
       tree = [
-        { type: 'directory', name: 'data', children: [
-          { type: 'directory', name: 'enterprise_docs', children: [
-            { type: 'directory', name: 'orders', children: [
-              { type: 'file', name: 'order_summary.html' },
-              { type: 'file', name: `order_${Date.now()}.html` },
-              { type: 'file', name: `order_${Date.now()}.pdf` }
-            ]}
+        { type: 'directory', name: 'output/', children: [
+          { type: 'directory', name: 'orders/', children: [
+            { type: 'file', name: `order_summary_${fullTimestamp}.html` },
+            { type: 'file', name: `order_summary_${fullTimestamp}.txt` }
           ]}
         ]}
       ];
