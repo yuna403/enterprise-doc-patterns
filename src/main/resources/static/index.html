@@ -434,6 +434,10 @@ body {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       执行：保存文档
     </button>
+    <button class="btn btn-primary" style="margin-left:10px;background:linear-gradient(135deg,#ef4444,#dc2626)" onclick="downloadPdf()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      下载 PDF
+    </button>
     <div class="grid-2" style="margin-top:16px">
       <div class="card"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-3" class="log-box">点击按钮执行...</div></div>
       <div class="card"><h3><span class="icon">&#128193;</span> 文件结构</h3><div id="tree-3" class="tree" style="color:var(--text-muted)">执行后显示...</div></div>
@@ -610,6 +614,15 @@ async function runFullFlow() {
     const treeEl = document.getElementById('tree-3');
     if (treeEl) treeEl.innerHTML = renderTree(data.tree);
   }
+}
+
+function downloadPdf() {
+  const params = getParams();
+  const qs = new URLSearchParams();
+  qs.set('orderType', params.orderType);
+  qs.set('productName', params.productName);
+  qs.set('amount', params.amount);
+  window.open('/api/order/download-pdf?' + qs.toString(), '_blank');
 }
 </script>
 </body>

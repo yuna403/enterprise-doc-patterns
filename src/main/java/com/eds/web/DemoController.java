@@ -8,10 +8,14 @@ import com.eds.filesystem.*;
 import com.eds.common.*;
 
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * REST Controller - 企业文档系统统一 API
@@ -135,13 +139,17 @@ public class DemoController {
 
             System.out.println("===== 保存文档 (策略模式) =====");
             String projectPath = System.getProperty("user.dir") + "/output/";
+            // 保存为 HTML/TXT
             new HtmlSaveStrategy(projectPath).save(decorated);
+            // 保存为可打印的 PDF (HTML)
+            new PdfSaveStrategy(projectPath).save(decorated);
             System.out.println("保存路径: " + projectPath + "orders/");
+            System.out.println("\n提示: 打开生成的 .html 文件，点击'🖨️ 打印 / 另存为PDF'按钮即可导出PDF");
         });
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("step", 4);
-        result.put("pattern", "策略模式 (Strategy - HtmlSaveStrategy)");
+        result.put("pattern", "策略模式 (Strategy - HtmlSaveStrategy + PdfSaveStrategy)");
         result.put("output", output);
         result.put("tree", buildFileTree());
         return result;
@@ -313,6 +321,47 @@ public class DemoController {
         result.put("output", output);
         result.put("tree", buildFileTree());
         return result;
+    }
+
+    // ==================== PDF 下载 ====================
+
+    @GetMapping("/order/download-pdf")
+    public void downloadPdf(HttpServletResponse response,
+                            @RequestParam(defaultValue = "simple") String orderType,
+                            @RequestParam(defaultValue = "MacBook Pro") String productName,
+                            @RequestParam(defaultValue = "3500") double amount) {
+        try {
+            // 构建订单信息
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            StringBuilder content = new StringBuilder();
+            content.append("Order ID: ").append(timestamp).append("\n");
+            if ("composite".equals(orderType)) {
+                content.append("Type: 组合订单\n");
+            } else {
+                content.append("Product: ").append(productName).append("\n");
+            }
+            content.append("Amount: $").append(String.format("%.2f", amount)).append("\n");
+
+            // 生成 PDF
+            byte[] pdfBytes = PdfSaveStrategy.generatePdf(content.toString(), timestamp);
+
+            // 设置响应头
+            String fileName = "order_" + timestamp + ".pdf";
+            response.setContentType("application/pdf");
+            response.setHeader("Content-Disposition",
+                    "attachment; filename=" + URLEncoder.encode(fileName, "UTF-8"));
+            response.setContentLength(pdfBytes.length);
+
+            // 写入响应流
+            OutputStream os = response.getOutputStream();
+            os.write(pdfBytes);
+            os.flush();
+        } catch (Exception e) {
+            try {
+                response.sendError(500, "PDF生成失败: " + e.getMessage());
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     // ==================== 工具方法 ====================
