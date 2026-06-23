@@ -969,6 +969,8 @@ function downloadPdf(event) {
     const amount = currentOrderData.amount || 3500;
     const items = currentOrderData.items || [];
     
+    console.log('PDF 数据:', { timestamp, orderType, productName, amount, items });
+    
     // 构建 pdfmake 文档定义
     const docDefinition = {
       content: [
@@ -978,9 +980,9 @@ function downloadPdf(event) {
           style: 'title'
         },
         
-        // 分隔线
+        // 分隔线 - 使用普通横线代替 Unicode 字符
         {
-          text: '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+          text: '----------------------------------------',
           alignment: 'center',
           color: '#808080',
           fontSize: 8,
@@ -1000,7 +1002,7 @@ function downloadPdf(event) {
         
         // 分隔线
         {
-          text: '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+          text: '----------------------------------------',
           alignment: 'center',
           color: '#808080',
           fontSize: 8,
@@ -1011,11 +1013,11 @@ function downloadPdf(event) {
         ...(orderType === 'composite' ? [
           { text: 'Type: Composite Order', style: 'content' },
           ...items.map(item => ({
-            text: `Product: ${item.productName}`,
+            text: `Product: ${item.productName} - $${(item.amount || 0).toFixed(2)}`,
             style: 'content',
             margin: [0, 6, 0, 0]
           })),
-          { text: `Amount: $${amount.toFixed(2)}`, style: 'content', margin: [0, 6, 0, 0] }
+          { text: `Total Amount: $${amount.toFixed(2)}`, style: 'content', margin: [0, 6, 0, 0], bold: true }
         ] : [
           { text: `Product: ${productName}`, style: 'content' },
           { text: `Amount: $${amount.toFixed(2)}`, style: 'content', margin: [0, 6, 0, 0] }
