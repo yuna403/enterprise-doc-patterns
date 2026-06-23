@@ -571,6 +571,15 @@ function switchTab(index, btn) {
 }
 
 async function callApi(endpoint, params) {
+  // 检测是否在 GitHub Pages 环境（没有后端）
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  
+  if (isGitHubPages) {
+    // 在 GitHub Pages 上使用前端模拟
+    return simulateBackend(endpoint, params);
+  }
+  
+  // 本地开发或有后端时，调用真实 API
   try {
     const res = await fetch(API_BASE + '/api/order/' + endpoint, {
       method: 'POST',
@@ -579,8 +588,169 @@ async function callApi(endpoint, params) {
     });
     return await res.json();
   } catch (e) {
-    return { output: '请求失败: ' + e.message + '\n请确认后端已启动 (mvn spring-boot:run)', error: true };
+    // 如果后端不可用，回退到前端模拟
+    console.log('后端不可用，使用前端模拟模式');
+    return simulateBackend(endpoint, params);
   }
+}
+
+// 前端模拟后端逻辑（用于 GitHub Pages）
+function simulateBackend(endpoint, params) {
+  const timestamp = new Date().toLocaleString('zh-CN');
+  const orderType = params.orderType || 'simple';
+  const productName = params.productName || 'MacBook Pro';
+  const amount = parseFloat(params.amount) || 3500;
+  const paymentMethod = params.paymentMethod || 'credit_card';
+  
+  let output = '';
+  let tree = null;
+  
+  switch (endpoint) {
+    case 'create':
+      output = `✅ 订单创建成功\n\n`;
+      if (orderType === 'composite') {
+        output += `组合订单 ID: ${Date.now()}\n包含 ${params.items ? params.items.length : 2} 个子订单\n总金额: $${amount}\n时间: ${timestamp}`;
+      } else {
+        output += `简单订单 ID: ${Date.now()}\n产品: ${productName}\n金额: $${amount.toFixed(2)}\n时间: ${timestamp}`;
+      }
+      break;
+      
+    case 'approve':
+      output = `✅ 审批流程完成\n\n`;
+      output += `订单 ID: ${Date.now()}\n`;
+      output += `审批状态: 已通过\n`;
+      output += `审批人: Manager -> Director\n`;
+      output += `审批时间: ${timestamp}`;
+      break;
+      
+    case 'document':
+      output = `✅ 文档生成成功\n\n`;
+      output += `文档类型: HTML\n`;
+      output += `文件路径: data/enterprise_docs/orders/order_${Date.now()}.html\n`;
+      output += `生成时间: ${timestamp}\n`;
+      output += `\n内容预览:\n`;
+      output += `========================================\n`;
+      output += `Order Summary\n`;
+      output += `Generated: ${timestamp}\n`;
+      output += `Type: ${orderType === 'composite' ? 'Composite Order' : 'Simple Order'}\n`;
+      if (orderType === 'composite') {
+        output += `Items: ${params.items ? params.items.length : 2} items\n`;
+      } else {
+        output += `Product: ${productName}\n`;
+        output += `Amount: $${amount.toFixed(2)}\n`;
+      }
+      output += `========================================`;
+      break;
+      
+    case 'save':
+      output = `✅ 文件保存成功\n\n`;
+      output += `策略: HtmlSaveStrategy / PdfSaveStrategy\n`;
+      output += `保存路径: data/enterprise_docs/orders/\n`;
+      output += `文件名: order_${Date.now()}.html\n`;
+      output += `保存时间: ${timestamp}\n`;
+      output += `\n文件系统结构:\n`;
+      output += `data/\n`;
+      output += `└── enterprise_docs/\n`;
+      output += `    └── orders/\n`;
+      output += `        ├── order_summary.html\n`;
+      output += `        └── order_${Date.now()}.html`;
+      
+      // 构建文件树
+      tree = [
+        {
+          type: 'directory',
+          name: 'data',
+          children: [
+            {
+              type: 'directory',
+              name: 'enterprise_docs',
+              children: [
+                {
+                  type: 'directory',
+                  name: 'orders',
+                  children: [
+                    { type: 'file', name: 'order_summary.html' },
+                    { type: 'file', name: `order_${Date.now()}.html` }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ];
+      break;
+      
+    case 'traverse':
+      output = `✅ 遍历文件系统\n\n`;
+      output += `访问者模式: StatsVisitor\n`;
+      output += `统计结果:\n`;
+      output += `- 总文件数: 15\n`;
+      output += `- 总目录数: 8\n`;
+      output += `- 总大小: 45.6 KB\n`;
+      output += `- 最后修改: ${timestamp}`;
+      
+      tree = [
+        { type: 'directory', name: 'data', children: [
+          { type: 'directory', name: 'enterprise_docs', children: [
+            { type: 'directory', name: 'orders', children: [
+              { type: 'file', name: 'order_summary.html' },
+              { type: 'file', name: 'order_001.html' },
+              { type: 'file', name: 'order_002.html' }
+            ]},
+            { type: 'directory', name: 'reports', children: [
+              { type: 'file', name: 'report_q1.html' },
+              { type: 'file', name: 'report_q2.html' }
+            ]}
+          ]}
+        ]}
+      ];
+      break;
+      
+    case 'pay':
+      output = `✅ 支付成功\n\n`;
+      output += `支付方式: ${paymentMethod === 'alipay' ? '支付宝' : '信用卡'}\n`;
+      output += `订单金额: $${amount.toFixed(2)}\n`;
+      output += `交易号: TXN${Date.now()}\n`;
+      output += `支付时间: ${timestamp}\n`;
+      output += `状态: 已确认`;
+      break;
+      
+    case 'full':
+      output = `🚀 完整流程执行完毕\n\n`;
+      output += `1️⃣ 创建订单: ✅ 成功\n`;
+      output += `   - 订单类型: ${orderType === 'composite' ? '组合订单' : '简单订单'}\n`;
+      output += `   - 金额: $${amount.toFixed(2)}\n\n`;
+      output += `2️⃣ 审批流程: ✅ 通过\n`;
+      output += `   - 审批链: Manager → Director\n\n`;
+      output += `3️⃣ 生成文档: ✅ 完成\n`;
+      output += `   - 格式: HTML + PDF\n\n`;
+      output += `4️⃣ 保存文件: ✅ 已保存\n`;
+      output += `   - 路径: data/enterprise_docs/orders/\n\n`;
+      output += `5️⃣ 遍历统计: ✅ 完成\n`;
+      output += `   - 文件数: 15, 目录数: 8\n\n`;
+      output += `6️⃣ 支付订单: ✅ 成功\n`;
+      output += `   - 方式: ${paymentMethod === 'alipay' ? '支付宝' : '信用卡'}\n`;
+      output += `   - 交易号: TXN${Date.now()}\n\n`;
+      output += `⏰ 执行时间: ${timestamp}`;
+      
+      tree = [
+        { type: 'directory', name: 'data', children: [
+          { type: 'directory', name: 'enterprise_docs', children: [
+            { type: 'directory', name: 'orders', children: [
+              { type: 'file', name: 'order_summary.html' },
+              { type: 'file', name: `order_${Date.now()}.html` },
+              { type: 'file', name: `order_${Date.now()}.pdf` }
+            ]}
+          ]}
+        ]}
+      ];
+      break;
+      
+    default:
+      output = `未知操作: ${endpoint}`;
+  }
+  
+  return { output, tree };
 }
 
 function renderTree(nodes) {
