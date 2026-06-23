@@ -491,6 +491,11 @@ body {
 </div>
 
 <script>
+// API 配置：根据环境自动切换
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? ''  // 本地开发：使用相对路径
+  : 'https://your-backend-url.onrender.com';  // 生产环境：替换为实际的 Render URL
+
 function getParams() {
   const orderType = document.getElementById('orderType').value;
   const params = {
@@ -561,7 +566,7 @@ function switchTab(index, btn) {
 
 async function callApi(endpoint, params) {
   try {
-    const res = await fetch('/api/order/' + endpoint, {
+    const res = await fetch(API_BASE + '/api/order/' + endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params || {})
@@ -622,7 +627,7 @@ function downloadPdf() {
   qs.set('orderType', params.orderType);
   qs.set('productName', params.productName);
   qs.set('amount', params.amount);
-  window.open('/api/order/download-pdf?' + qs.toString(), '_blank');
+  window.open(API_BASE + '/api/order/download-pdf?' + qs.toString(), '_blank');
 }
 </script>
 </body>
