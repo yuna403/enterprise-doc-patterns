@@ -4,28 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>企业文档系统 - 设计模式综合演示</title>
-<!-- jsPDF 库：用于前端生成 PDF（异步加载，不阻塞页面） -->
-<script>
-// 异步加载 jsPDF，不阻塞页面渲染
-(function() {
-  var script = document.createElement('script');
-  script.src = 'https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-  script.async = true;
-  script.onload = function() {
-    console.log('jsPDF 库加载成功');
-  };
-  script.onerror = function() {
-    console.warn('jsPDF 库加载失败，PDF 下载功能将不可用');
-    // 创建假的 jsPDF 对象，防止报错
-    window.jspdf = {
-      jsPDF: function() {
-        throw new Error('jsPDF 库未加载，无法生成 PDF');
-      }
-    };
-  };
-  document.head.appendChild(script);
-})();
-</script>
+<!-- pdfmake 库：用于前端生成 PDF（支持中文） -->
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
 <style>
 :root {
   --primary: #6366f1;
@@ -940,40 +921,17 @@ async function downloadPdf(event) {
   }
   
   try {
-    // 检查 jsPDF 是否可用
-    if (!window.jspdf || !window.jspdf.jsPDF) {
+    // 检查 pdfmake 是否可用
+    if (!window.pdfMake) {
       alert('PDF 库未加载，无法生成 PDF。请检查网络连接或稍后重试。');
-      console.error('jsPDF 库不可用');
+      console.error('pdfMake 库不可用');
       return;
     }
     
     // 如果没有订单数据，先提示用户执行保存操作
     if (!currentOrderData) {
-      alert('请先点击“执行：保存文档”按钮生成订单数据！');
+      alert('请先点击"执行：保存文档"按钮生成订单数据！');
       return;
-    }
-    
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // 加载中文字体 - 使用开源中文字体
-    try {
-      // 从 CDN 加载思源黑体 (Source Han Sans)
-      const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.0.0/files/noto-sans-sc-latin-400-normal.ttf';
-      const response = await fetch(fontUrl);
-      const fontBuffer = await response.arrayBuffer();
-      const fontBase64 = btoa(
-        new Uint8Array(fontBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
-      
-      // 添加字体到 jsPDF
-      doc.addFileToVFS('NotoSansSC-Regular.ttf', fontBase64);
-      doc.addFont('NotoSansSC-Regular.ttf', 'NotoSansSC', 'normal');
-      doc.setFont('NotoSansSC');
-      console.log('中文字体加载成功');
-    } catch (fontError) {
-      console.warn('中文字体加载失败，使用默认字体:', fontError);
-      doc.setFont('helvetica');
     }
     
     const timestamp = currentOrderData.timestamp || new Date().toLocaleString('zh-CN');
@@ -982,63 +940,100 @@ async function downloadPdf(event) {
     const amount = currentOrderData.amount || 3500;
     const items = currentOrderData.items || [];
     
-    let yPosition = 20;
-    
-    // 标题 - 居中，20号字体，加粗
-    doc.setFontSize(20);
-    doc.setTextColor(40, 40, 40);
-    doc.text('订单摘要', 105, yPosition, { align: 'center' });
-    yPosition += 20;
-    
-    // 分隔线 - 灰色
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(128, 128, 128);
-    doc.text('\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501', 105, yPosition, { align: 'center' });
-    yPosition += 15;
-    
-    // 文档信息 - 10号字体，深灰色
-    doc.setFontSize(10);
-    doc.setTextColor(64, 64, 64);
-    doc.text(`生成时间：${timestamp}`, 20, yPosition);
-    yPosition += 8;
-    doc.text('文档类型：企业订单系统', 20, yPosition);
-    yPosition += 15;
-    
-    // 分隔线
-    doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text('\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501', 105, yPosition, { align: 'center' });
-    yPosition += 12;
-    
-    // 文档内容 - 12号字体
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    
-    if (orderType === 'composite') {
-      doc.text('Type: 组合订单', 20, yPosition);
-      yPosition += 10;
-      items.forEach(item => {
-        doc.text(`Product: ${item.productName}`, 20, yPosition);
-        yPosition += 10;
-      });
-    } else {
-      doc.text(`Product: ${productName}`, 20, yPosition);
-      yPosition += 10;
-    }
-    doc.text(`Amount: $${amount.toFixed(2)}`, 20, yPosition);
-    yPosition += 18;
-    
-    // 底部信息 - 8号字体，斜体，灰色，居中
-    doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text('本文档由企业文档系统自动生成 | 仅供内部使用', 105, yPosition, { align: 'center' });
+    // 构建 pdfmake 文档定义
+    const docDefinition = {
+      content: [
+        // 标题
+        {
+          text: '订单摘要',
+          style: 'title'
+        },
+        
+        // 分隔线
+        {
+          text: '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+          alignment: 'center',
+          color: '#808080',
+          fontSize: 8,
+          margin: [0, 15, 0, 15]
+        },
+        
+        // 文档信息
+        {
+          text: `生成时间：${timestamp}`,
+          style: 'info'
+        },
+        {
+          text: '文档类型：企业订单系统',
+          style: 'info',
+          margin: [0, 4, 0, 15]
+        },
+        
+        // 分隔线
+        {
+          text: '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+          alignment: 'center',
+          color: '#808080',
+          fontSize: 8,
+          margin: [0, 0, 0, 12]
+        },
+        
+        // 文档内容
+        ...(orderType === 'composite' ? [
+          { text: 'Type: 组合订单', style: 'content' },
+          ...items.map(item => ({
+            text: `Product: ${item.productName}`,
+            style: 'content',
+            margin: [0, 6, 0, 0]
+          })),
+          { text: `Amount: $${amount.toFixed(2)}`, style: 'content', margin: [0, 6, 0, 0] }
+        ] : [
+          { text: `Product: ${productName}`, style: 'content' },
+          { text: `Amount: $${amount.toFixed(2)}`, style: 'content', margin: [0, 6, 0, 0] }
+        ]),
+        
+        // 底部信息
+        {
+          text: '本文档由企业文档系统自动生成 | 仅供内部使用',
+          style: 'footer'
+        }
+      ],
+      
+      styles: {
+        title: {
+          fontSize: 20,
+          bold: true,
+          alignment: 'center',
+          color: '#282828',
+          margin: [0, 0, 0, 20]
+        },
+        info: {
+          fontSize: 10,
+          color: '#404040'
+        },
+        content: {
+          fontSize: 12,
+          color: '#000000'
+        },
+        footer: {
+          fontSize: 8,
+          italics: true,
+          alignment: 'center',
+          color: '#808080',
+          margin: [0, 18, 0, 0]
+        }
+      },
+      
+      defaultStyle: {
+        font: 'Roboto'
+      }
+    };
     
     // 生成文件名
     const fileName = `order_${Date.now()}.pdf`;
     
     // 下载 PDF
-    doc.save(fileName);
+    pdfMake.createPdf(docDefinition).download(fileName);
     console.log('PDF downloaded successfully:', fileName);
   } catch (error) {
     console.error('PDF generation failed:', error);
