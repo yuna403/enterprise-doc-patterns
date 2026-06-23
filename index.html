@@ -437,7 +437,7 @@ body {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       执行：保存文档
     </button>
-    <button class="btn btn-primary" style="margin-left:10px;background:linear-gradient(135deg,#ef4444,#dc2626)" onclick="downloadPdf()">
+    <button class="btn btn-primary" style="margin-left:10px;background:linear-gradient(135deg,#ef4444,#dc2626)" onclick="downloadPdf(event)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       下载 PDF
     </button>
@@ -636,10 +636,16 @@ async function runFullFlow() {
   }
 }
 
-function downloadPdf() {
+function downloadPdf(event) {
+  // 阻止默认行为和事件冒泡
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
   // 如果没有订单数据，先提示用户执行保存操作
   if (!currentOrderData) {
-    alert('请先点击“执行：保存文档”按钮生成订单数据！');
+    alert('请先点击"执行：保存文档"按钮生成订单数据！');
     return;
   }
   
