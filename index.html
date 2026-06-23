@@ -973,12 +973,14 @@ function downloadPdf(event) {
     const items = currentOrderData.items || [];
     
     console.log('PDF 数据:', { timestamp, orderType, productName, amount, items });
+    console.log('完整的 currentOrderData:', JSON.stringify(currentOrderData, null, 2));
     
     // 如果是组合订单且 items 存在，重新计算总金额确保一致性
     let displayAmount = amount;
     if (orderType === 'composite' && items.length > 0) {
       const calculatedTotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
       console.log('根据 items 重新计算的总金额:', calculatedTotal);
+      console.log('items 详情:', items.map(i => `${i.productName}: $${i.amount}`));
       displayAmount = calculatedTotal;
     }
     
