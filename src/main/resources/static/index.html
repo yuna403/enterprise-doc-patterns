@@ -549,7 +549,7 @@ function addSubItem() {
   const tbody = document.getElementById('compositeItemsBody');
   const row = document.createElement('tr');
   row.innerHTML = '<td><input type="text" class="sub-product" value="New Product" placeholder="产品名称"></td>' +
-                  '<td><input type="number" class="sub-amount" value="0" placeholder="金额"></td>' +
+                  '<td><input type="number" class="sub-amount" value="0" placeholder="金额" oninput="updateSubTotal()"></td>' +
                   '<td><button class="btn-sm btn-remove" onclick="removeSubItem(this)">删除</button></td>';
   tbody.appendChild(row);
   updateSubTotal();
@@ -1089,6 +1089,14 @@ window.addEventListener('load', function() {
     } else {
       console.warn('✗ pdfMake 或字体文件未正确加载');
     }
+    
+    // 为现有的金额输入框添加事件监听
+    document.querySelectorAll('.sub-amount').forEach(function(input) {
+      input.addEventListener('input', updateSubTotal);
+    });
+    
+    // 初始化时计算一次总金额
+    updateSubTotal();
   }, 1000);
 });
 </script>
