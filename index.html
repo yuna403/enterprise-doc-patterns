@@ -928,6 +928,16 @@ function downloadPdf(event) {
       return;
     }
     
+    // 检查字体文件是否加载
+    if (!window.pdfMake.vfs || Object.keys(window.pdfMake.vfs).length === 0) {
+      console.warn('字体文件未加载，尝试重新加载...');
+      alert('PDF 字体库加载中，请稍后再试（约5秒后）');
+      return;
+    }
+    
+    console.log('pdfMake 版本:', window.pdfMake.version);
+    console.log('可用字体:', Object.keys(window.pdfMake.vfs));
+    
     // 如果没有订单数据，先提示用户执行保存操作
     if (!currentOrderData) {
       alert('请先点击"执行：保存文档"按钮生成订单数据！');
@@ -1032,14 +1042,36 @@ function downloadPdf(event) {
     // 生成文件名
     const fileName = `order_${Date.now()}.pdf`;
     
+    console.log('开始生成 PDF...');
+    
     // 下载 PDF
-    pdfMake.createPdf(docDefinition).download(fileName);
-    console.log('PDF downloaded successfully:', fileName);
+    try {
+      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+      pdfDocGenerator.download(fileName, function() {
+        console.log('PDF 下载成功:', fileName);
+      });
+    } catch (pdfError) {
+      console.error('PDF 生成错误:', pdfError);
+      alert('PDF 生成失败：' + pdfError.message + '\n\n请尝试刷新页面后重试');
+    }
   } catch (error) {
     console.error('PDF generation failed:', error);
     alert('PDF 生成失败：' + error.message);
   }
 }
+
+// 页面加载完成后检查 pdfmake 状态
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    if (window.pdfMake && window.pdfMake.vfs) {
+      console.log('✓ pdfMake 初始化成功');
+      console.log('  可用字体数量:', Object.keys(window.pdfMake.vfs).length);
+      console.log('  字体列表:', Object.keys(window.pdfMake.vfs).join(', '));
+    } else {
+      console.warn('✗ pdfMake 或字体文件未正确加载');
+    }
+  }, 1000);
+});
 </script>
 </body>
 </html>
