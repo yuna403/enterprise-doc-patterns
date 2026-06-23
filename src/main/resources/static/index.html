@@ -4,9 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>企业文档系统 - 设计模式综合演示</title>
-<!-- jsPDF 库：用于前端生成 PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<!-- jsPDF 库：用于前端生成 PDF（异步加载，不阻塞页面） -->
+<script>
+// 异步加载 jsPDF，不阻塞页面渲染
+(function() {
+  var script = document.createElement('script');
+  script.src = 'https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  script.async = true;
+  script.onload = function() {
+    console.log('jsPDF 库加载成功');
+  };
+  script.onerror = function() {
+    console.warn('jsPDF 库加载失败，PDF 下载功能将不可用');
+    // 创建假的 jsPDF 对象，防止报错
+    window.jspdf = {
+      jsPDF: function() {
+        throw new Error('jsPDF 库未加载，无法生成 PDF');
+      }
+    };
+  };
+  document.head.appendChild(script);
+})();
+</script>
 <style>
 :root {
   --primary: #6366f1;
@@ -574,23 +593,44 @@ async function callApi(endpoint, params) {
   // 检测是否在 GitHub Pages 环境（没有后端）
   const isGitHubPages = window.location.hostname.includes('github.io');
   
+  console.log('调用 API:', endpoint, '环境:', isGitHubPages ? 'GitHub Pages' : '本地/服务器');
+  
   if (isGitHubPages) {
     // 在 GitHub Pages 上使用前端模拟
-    return simulateBackend(endpoint, params);
+    console.log('使用前端模拟模式');
+    try {
+      return simulateBackend(endpoint, params);
+    } catch (e) {
+      console.error('模拟后端执行失败:', e);
+      return { output: '执行失败: ' + e.message, tree: null };
+    }
   }
   
   // 本地开发或有后端时，调用真实 API
   try {
+    console.log('尝试连接后端 API:', API_BASE + '/api/order/' + endpoint);
     const res = await fetch(API_BASE + '/api/order/' + endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params || {})
     });
-    return await res.json();
+    
+    if (!res.ok) {
+      throw new Error('HTTP error! status: ' + res.status);
+    }
+    
+    const data = await res.json();
+    console.log('API 响应成功');
+    return data;
   } catch (e) {
     // 如果后端不可用，回退到前端模拟
-    console.log('后端不可用，使用前端模拟模式');
-    return simulateBackend(endpoint, params);
+    console.warn('后端不可用，使用前端模拟模式:', e.message);
+    try {
+      return simulateBackend(endpoint, params);
+    } catch (simError) {
+      console.error('模拟后端也失败了:', simError);
+      return { output: '请求失败: ' + e.message + '\n\n提示: 请检查网络连接或稍后重试', tree: null };
+    }
   }
 }
 
@@ -773,20 +813,31 @@ async function runStep(step) {
   const idx = tabMap[step];
   const logEl = document.getElementById('log-' + idx);
   logEl.textContent = '正在执行...';
-  const data = await callApi(step, getParams());
   
-  // 保存订单数据用于 PDF 生成
-  if (step === 'save') {
-    currentOrderData = {
-      ...getParams(),
-      timestamp: new Date().toLocaleString('zh-CN')
-    };
-  }
-  
-  logEl.textContent = data.output || '无输出';
-  if (data.tree) {
-    const treeEl = document.getElementById('tree-' + idx);
-    if (treeEl) treeEl.innerHTML = renderTree(data.tree);
+  try {
+    const data = await callApi(step, getParams());
+    
+    // 保存订单数据用于 PDF 生成
+    if (step === 'save' && data) {
+      currentOrderData = {
+        ...getParams(),
+        timestamp: new Date().toLocaleString('zh-CN')
+      };
+    }
+    
+    if (data && data.output) {
+      logEl.textContent = data.output;
+    } else {
+      logEl.textContent = '无输出或响应格式错误';
+    }
+    
+    if (data && data.tree) {
+      const treeEl = document.getElementById('tree-' + idx);
+      if (treeEl) treeEl.innerHTML = renderTree(data.tree);
+    }
+  } catch (e) {
+    console.error('执行步骤失败:', e);
+    logEl.textContent = '执行出错: ' + e.message;
   }
 }
 
@@ -798,11 +849,22 @@ async function runFullFlow() {
   const logEl = document.getElementById('log-0');
   logEl.textContent = '正在执行完整流程，请稍候...';
 
-  const data = await callApi('full', getParams());
-  logEl.textContent = data.output || '无输出';
-  if (data.tree) {
-    const treeEl = document.getElementById('tree-3');
-    if (treeEl) treeEl.innerHTML = renderTree(data.tree);
+  try {
+    const data = await callApi('full', getParams());
+    
+    if (data && data.output) {
+      logEl.textContent = data.output;
+    } else {
+      logEl.textContent = '无输出或响应格式错误';
+    }
+    
+    if (data && data.tree) {
+      const treeEl = document.getElementById('tree-3');
+      if (treeEl) treeEl.innerHTML = renderTree(data.tree);
+    }
+  } catch (e) {
+    console.error('完整流程执行失败:', e);
+    logEl.textContent = '执行出错: ' + e.message;
   }
 }
 
@@ -813,13 +875,20 @@ function downloadPdf(event) {
     event.stopPropagation();
   }
   
-  // 如果没有订单数据，先提示用户执行保存操作
-  if (!currentOrderData) {
-    alert('请先点击"执行：保存文档"按钮生成订单数据！');
-    return;
-  }
-  
   try {
+    // 检查 jsPDF 是否可用
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert('PDF 库未加载，无法生成 PDF。请检查网络连接或稍后重试。');
+      console.error('jsPDF 库不可用');
+      return;
+    }
+    
+    // 如果没有订单数据，先提示用户执行保存操作
+    if (!currentOrderData) {
+      alert('请先点击“执行：保存文档”按钮生成订单数据！');
+      return;
+    }
+    
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     

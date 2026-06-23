@@ -40,5 +40,6 @@ public class CompositeOrder implements OrderComponent {
     @Override
     public void accept(Visitor visitor) {
         visitor.visit(this);
+        children.forEach(c -> c.accept(visitor));
     }
 }
