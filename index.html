@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>企业文档系统 - 设计模式综合演示</title>
+<!-- jsPDF 库：用于前端生成 PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root {
   --primary: #6366f1;
@@ -434,6 +437,10 @@ body {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       执行：保存文档
     </button>
+    <button class="btn btn-primary" style="margin-left:10px;background:linear-gradient(135deg,#ef4444,#dc2626)" onclick="downloadPdf()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      下载 PDF
+    </button>
     <div class="grid-2" style="margin-top:16px">
       <div class="card"><h3><span class="icon">&#128187;</span> 执行日志</h3><div id="log-3" class="log-box">点击按钮执行...</div></div>
       <div class="card"><h3><span class="icon">&#128193;</span> 文件结构</h3><div id="tree-3" class="tree" style="color:var(--text-muted)">执行后显示...</div></div>
@@ -487,6 +494,14 @@ body {
 </div>
 
 <script>
+// API 配置：根据环境自动切换
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? ''  // 本地开发：使用相对路径
+  : 'https://your-backend-url.onrender.com';  // 生产环境：替换为实际的 Render URL（可选）
+
+// 全局存储当前订单数据，用于 PDF 生成
+let currentOrderData = null;
+
 function getParams() {
   const orderType = document.getElementById('orderType').value;
   const params = {
@@ -555,6 +570,19 @@ function switchTab(index, btn) {
   document.getElementById('tab-' + index).classList.add('active');
 }
 
+async function callApi(endpoint, params) {
+  try {
+    const res = await fetch(API_BASE + '/api/order/' + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params || {})
+    });
+    return await res.json();
+  } catch (e) {
+    return { output: '请求失败: ' + e.message + '\n请确认后端已启动 (mvn spring-boot:run)', error: true };
+  }
+}
+
 function renderTree(nodes) {
   let html = '';
   nodes.forEach(n => {
@@ -569,130 +597,126 @@ function renderTree(nodes) {
   return html;
 }
 
-/* ===== 本地模拟后端响应 ===== */
-function simulateStep(step, p) {
-  switch (step) {
-    case 'create':
-      if (p.orderType === 'composite') {
-        var total = p.items.reduce(function(s, i) { return s + i.amount; }, 0);
-        return { output: 'CompositeOrder 创建成功\n子订单数: ' + p.items.length + '\n' +
-          p.items.map(function(i) { return '  - SimpleOrder: ' + i.productName + ' ($' + i.amount + ')'; }).join('\n') +
-          '\n总金额: $' + total };
-      }
-      return { output: 'SimpleOrder 创建成功\n产品: ' + p.productName + '\n金额: $' + p.amount };
+const tabMap = { create: 0, approve: 1, document: 2, save: 3, traverse: 4, pay: 5 };
 
-    case 'approve':
-      if (p.amount < 1000)
-        return { output: '[ManagerApprover] 经理审批通过\n金额: $' + p.amount + ' (< $1000)\n审批结果: 已通过' };
-      if (p.amount < 5000)
-        return { output: '[ManagerApprover] 金额超出经理权限，传递到总监\n[DirectorApprover] 总监审批通过\n金额: $' + p.amount + ' (< $5000)\n审批结果: 已通过' };
-      return { output: '[ManagerApprover] 金额超出经理权限，传递到总监\n[DirectorApprover] 金额超出总监权限\n审批结果: 已拒绝' };
-
-    case 'document':
-      var doc = '=== 订单文档 ===\nOrder ID: ORD-001\n';
-      if (p.orderType === 'composite') {
-        doc += 'Type: 组合订单\n';
-        p.items.forEach(function(i) { doc += 'Product: ' + i.productName + '\n'; });
-        doc += 'Amount: $' + p.items.reduce(function(s, i) { return s + i.amount; }, 0);
-      } else {
-        doc += 'Product: ' + p.productName + '\nAmount: $' + p.amount;
-      }
-      doc += '\nStatus: APPROVED\n=== 文档结束 ===\n\n[BoldDecorator] 已应用 <b> 标签装饰';
-      return { output: doc };
-
-    case 'save':
-      return {
-        output: '[HtmlSaveStrategy] 保存为 HTML 格式\n  -> output/order_summary.html\n[TxtSaveStrategy] 保存为 TXT 格式\n  -> output/order_summary.txt\n\n保存完成!',
-        tree: [
-          { type: 'directory', name: 'output', children: [
-            { type: 'file', name: 'order_summary.html' },
-            { type: 'file', name: 'order_summary.txt' }
-          ]}
-        ]
-      };
-
-    case 'traverse':
-      return {
-        output: '[FileSystemIterator] 深度优先遍历\n[StatsVisitor] 收集统计信息\n\n遍历结果:\n  目录数: 3\n  文件数: 4\n  总大小: 12.5 KB\n\n遍历完成!',
-        tree: [
-          { type: 'directory', name: 'enterprise_docs', children: [
-            { type: 'directory', name: 'orders', children: [
-              { type: 'file', name: 'order_summary.html' },
-              { type: 'file', name: 'order_summary.txt' }
-            ]},
-            { type: 'directory', name: 'output', children: [
-              { type: 'file', name: 'report.html' },
-              { type: 'file', name: 'report.txt' }
-            ]}
-          ]}
-        ]
-      };
-
-    case 'pay':
-      if (p.paymentMethod === '信用卡')
-        return { output: '[CreditCardStrategy] 信用卡支付\n卡号: ' + p.cardNumber + '\n金额: $' + p.amount + '\n交易ID: TXN-' + Math.floor(Math.random() * 90000 + 10000) + '\n支付结果: 成功' };
-      return { output: '[AlipayStrategy] 支付宝支付\n账号: ' + p.cardNumber + '\n金额: $' + p.amount + '\n交易ID: TXN-' + Math.floor(Math.random() * 90000 + 10000) + '\n支付结果: 成功' };
-  }
-}
-
-var tabMap = { create: 0, approve: 1, document: 2, save: 3, traverse: 4, pay: 5 };
-
-function runStep(step) {
-  var idx = tabMap[step];
-  var logEl = document.getElementById('log-' + idx);
+async function runStep(step) {
+  const idx = tabMap[step];
+  const logEl = document.getElementById('log-' + idx);
   logEl.textContent = '正在执行...';
-  var data = simulateStep(step, getParams());
+  const data = await callApi(step, getParams());
+  
+  // 保存订单数据用于 PDF 生成
+  if (step === 'save') {
+    currentOrderData = {
+      ...getParams(),
+      timestamp: new Date().toLocaleString('zh-CN')
+    };
+  }
+  
   logEl.textContent = data.output || '无输出';
   if (data.tree) {
-    var treeEl = document.getElementById('tree-' + idx);
+    const treeEl = document.getElementById('tree-' + idx);
     if (treeEl) treeEl.innerHTML = renderTree(data.tree);
   }
 }
 
-function runFullFlow() {
-  var firstTab = document.querySelector('.tab-btn');
+async function runFullFlow() {
+  // Switch to tab 0 first
+  const firstTab = document.querySelector('.tab-btn');
   switchTab(0, firstTab);
 
-  var p = getParams();
-  var logEl = document.getElementById('log-0');
-  var output = '';
+  const logEl = document.getElementById('log-0');
+  logEl.textContent = '正在执行完整流程，请稍候...';
 
-  // Step 1: 创建订单
-  output += '>>> 步骤 1: 创建订单\n';
-  var d1 = simulateStep('create', p);
-  output += d1.output + '\n\n';
+  const data = await callApi('full', getParams());
+  logEl.textContent = data.output || '无输出';
+  if (data.tree) {
+    const treeEl = document.getElementById('tree-3');
+    if (treeEl) treeEl.innerHTML = renderTree(data.tree);
+  }
+}
 
-  // Step 2: 审批订单
-  output += '>>> 步骤 2: 审批订单\n';
-  var d2 = simulateStep('approve', p);
-  output += d2.output + '\n\n';
-
-  // Step 3: 生成文档
-  output += '>>> 步骤 3: 生成文档\n';
-  var d3 = simulateStep('document', p);
-  output += d3.output + '\n\n';
-
-  // Step 4: 保存文件
-  output += '>>> 步骤 4: 保存文件\n';
-  var d4 = simulateStep('save', p);
-  output += d4.output + '\n\n';
-
-  // Step 5: 遍历文件
-  output += '>>> 步骤 5: 遍历文件\n';
-  var d5 = simulateStep('traverse', p);
-  output += d5.output + '\n\n';
-
-  // Step 6: 支付订单
-  output += '>>> 步骤 6: 支付订单\n';
-  var d6 = simulateStep('pay', p);
-  output += d6.output + '\n\n';
-
-  output += '===========================\n全部流程执行完成!';
-  logEl.textContent = output;
-
-  if (d4.tree) {
-    var treeEl = document.getElementById('tree-3');
-    if (treeEl) treeEl.innerHTML = renderTree(d4.tree);
+function downloadPdf() {
+  // 如果没有订单数据，先提示用户执行保存操作
+  if (!currentOrderData) {
+    alert('请先点击“执行：保存文档”按钮生成订单数据！');
+    return;
+  }
+  
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // 设置中文字体（使用内置字体作为回退）
+    doc.setFont('helvetica');
+    
+    // 标题
+    doc.setFontSize(20);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Order Summary', 105, 20, { align: 'center' });
+    
+    // 分隔线
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 25, 190, 25);
+    
+    // 订单信息
+    doc.setFontSize(12);
+    doc.setTextColor(60, 60, 60);
+    let yPosition = 35;
+    
+    doc.text(`Generated Time: ${currentOrderData.timestamp}`, 20, yPosition);
+    yPosition += 8;
+    doc.text(`Order Type: ${currentOrderData.orderType === 'composite' ? 'Composite Order' : 'Simple Order'}`, 20, yPosition);
+    yPosition += 8;
+    
+    // 产品信息
+    if (currentOrderData.orderType === 'composite' && currentOrderData.items) {
+      yPosition += 5;
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Items:', 20, yPosition);
+      yPosition += 8;
+      
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+      currentOrderData.items.forEach((item, index) => {
+        doc.text(`${index + 1}. ${item.productName}: $${item.amount.toFixed(2)}`, 25, yPosition);
+        yPosition += 7;
+      });
+      
+      // 计算总金额
+      const total = currentOrderData.items.reduce((sum, item) => sum + item.amount, 0);
+      yPosition += 5;
+      doc.setFontSize(13);
+      doc.setTextColor(0, 100, 0);
+      doc.text(`Total Amount: $${total.toFixed(2)}`, 25, yPosition);
+    } else {
+      yPosition += 5;
+      doc.text(`Product: ${currentOrderData.productName}`, 20, yPosition);
+      yPosition += 8;
+      doc.text(`Amount: $${currentOrderData.amount.toFixed(2)}`, 20, yPosition);
+    }
+    
+    // 底部信息
+    yPosition += 15;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPosition, 190, yPosition);
+    yPosition += 8;
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
+    doc.text('This document is generated by Enterprise Document System', 105, yPosition, { align: 'center' });
+    yPosition += 5;
+    doc.text('For internal use only', 105, yPosition, { align: 'center' });
+    
+    // 生成文件名
+    const fileName = `order_${Date.now()}.pdf`;
+    
+    // 下载 PDF
+    doc.save(fileName);
+    console.log('PDF downloaded successfully:', fileName);
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    alert('PDF 生成失败：' + error.message);
   }
 }
 </script>
