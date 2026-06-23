@@ -759,6 +759,17 @@ function simulateBackend(endpoint, params) {
     case 'full':
       const fullTimestamp = Date.now().toString().slice(-14);
       output += '===== Step 1: 创建订单 (组合模式) =====\n';
+      
+      // 确保 currentOrderData 已初始化
+      if (!currentOrderData) {
+        currentOrderData = {
+          timestamp: new Date().toLocaleString('zh-CN'),
+          orderType: orderType,
+          items: [],
+          amount: 0
+        };
+      }
+      
       if (orderType === 'composite') {
         const items = params.items || [
           { productName: 'MacBook Pro', amount: 3500 },
@@ -771,10 +782,13 @@ function simulateBackend(endpoint, params) {
           total += item.amount;
         });
         output += `订单总金额: $${total.toFixed(2)}\n`;
-        // 更新 currentOrderData 中的金额
+        // 更新 currentOrderData 中的金额和订单项
         currentOrderData.amount = total;
+        currentOrderData.items = items;
       } else {
         output += `处理订单: ${productName} - $${amount.toFixed(2)}\n`;
+        currentOrderData.amount = amount;
+        currentOrderData.productName = productName;
       }
       
       output += '\n===== Step 2: 订单审批 (责任链模式) =====\n';
